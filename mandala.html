@@ -2,7 +2,7 @@
 <!--
 MIT License
 
-Copyright (c) 2926 Lucian (luc1pop)
+Copyright (c) [Year] [Author Name]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -206,7 +206,7 @@ SOFTWARE.
   <div class="flex-row tool-section">
     <div class="section-title">Dividing Tools</div>
     <label>Starting Angle: <input type="number" id="start-angle" value="0" min="0" max="360" step="0.1">°</label>
-    <label><input type="checkbox" id="mirror-draw"> Mirror draw around blue line</label>
+    <label><input type="checkbox" id="mirror-draw"> Mirror draw</label>
   </div>
   
   <div class="flex-row tool-section">
@@ -357,6 +357,16 @@ SOFTWARE.
     // Math 0 is right, but requirement 0 is up (subtract 90 degrees)
     const startRad = (startDeg - 90) * Math.PI / 180;
     const endRad = startRad + (divDeg * Math.PI / 180);
+
+    // Draw gray mask outside the drawing wedge
+    if (divDeg < 360) {
+      const maskRadius = Math.sqrt(cx * cx + cy * cy) + 2;
+      uiCtx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+      uiCtx.beginPath();
+      uiCtx.moveTo(cx, cy);
+      uiCtx.arc(cx, cy, maskRadius, endRad, startRad + 2 * Math.PI);
+      uiCtx.fill();
+    }
 
     // Store anchor positions for hit detection
     startAnchorPos = { x: cx + Math.cos(startRad) * radius, y: cy + Math.sin(startRad) * radius };
