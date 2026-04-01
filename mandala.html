@@ -185,6 +185,8 @@ SOFTWARE.
     <div class="section-title">Painting Tool</div>
     <label><input type="radio" name="tool" value="brush" checked> Brush</label>
     <label><input type="radio" name="tool" value="fill"> Fill Bucket</label>
+    <label><input type="radio" name="tool" value="rect"> Rectangle</label>
+    <label><input type="radio" name="tool" value="circle"> Circle</label>
   </div>
 
   <div class="flex-row tool-section" id="brush-settings-section">
@@ -195,6 +197,12 @@ SOFTWARE.
   <div class="flex-row tool-section" id="fill-settings-section" style="display: none;">
     <div class="section-title">Fill Bucket Settings</div>
     <label>Sensitivity: <input type="range" id="fill-sensitivity" min="0" max="100" value="20"> <span id="fill-sensitivity-val">20</span></label>
+  </div>
+
+  <div class="flex-row tool-section" id="shape-settings-section" style="display: none;">
+    <div class="section-title">Shape Settings</div>
+    <label>Fill Color: <input type="color" id="shape-fill-color" value="#ffffff"></label>
+    <label><input type="checkbox" id="shape-fill-transparent" checked> Transparent Fill</label>
   </div>
 
   <div class="flex-row tool-section">
@@ -261,6 +269,9 @@ SOFTWARE.
   const fillSensitivityVal = document.getElementById('fill-sensitivity-val');
   const paintColorIn = document.getElementById('paint-color');
   const bgColorIn = document.getElementById('bg-color');
+  const shapeSettingsSection = document.getElementById('shape-settings-section');
+  const shapeFillColor = document.getElementById('shape-fill-color');
+  const shapeFillTransparent = document.getElementById('shape-fill-transparent');
   
   const startAngleIn = document.getElementById('start-angle');
   const mirrorDrawCheck = document.getElementById('mirror-draw');
@@ -282,6 +293,12 @@ SOFTWARE.
   let isDraggingStart = false;
   let isDraggingEnd = false;
   
+  let isDrawingShape = false;
+  let shapeStartX = 0;
+  let shapeStartY = 0;
+  let currentShapeX = 0;
+  let currentShapeY = 0;
+
   // --- Undo/Redo State ---
   let historyStack = [];
   let historyIndex = -1;
@@ -504,6 +521,73 @@ SOFTWARE.
       }
   }
 
+  function drawCurrentShape(targetCtx, startX, startY, endX, endY) {
+      const tool = document.querySelector('input[name="tool"]:checked').value;
+      const mirror = mirrorDrawCheck.checked;
+      const divDeg = getDivAngle();
+      const cx = drawCanvas.width / 2, cy = drawCanvas.height / 2;
+      const startRad = (getStartAngle() - 90) * Math.PI / 180;
+
+      const strokeColor = paintColorIn.value;
+      const lineWidth = parseInt(brushSizeIn.value);
+      const isTransparent = shapeFillTransparent.checked;
+      const fillColor = shapeFillColor.value;
+
+      targetCtx.save();
+
+      targetCtx.lineWidth = lineWidth;
+      targetCtx.strokeStyle = strokeColor;
+      targetCtx.fillStyle = fillColor;
+
+      const drawTheShape = (ctx) => {
+          ctx.save();
+          // Clip to the active wedge (rotates with the context)
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          if (divDeg < 360) {
+              ctx.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, startRad, startRad + divDeg * Math.PI / 180);
+          } else {
+              ctx.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, 0, 2 * Math.PI);
+          }
+          ctx.closePath();
+          ctx.clip();
+
+          ctx.beginPath();
+          if (tool === 'rect') {
+              const w = endX - startX;
+              const h = endY - startY;
+              ctx.rect(startX - cx, startY - cy, w, h);
+          } else if (tool === 'circle') {
+              const r = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+              ctx.arc(startX - cx, startY - cy, r, 0, 2 * Math.PI);
+          }
+          if (!isTransparent) ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+      };
+
+      for (let i = 0; i < 360; i += divDeg) {
+         const rad = i * Math.PI / 180;
+         targetCtx.save();
+         targetCtx.translate(cx, cy);
+         targetCtx.rotate(rad);
+         drawTheShape(targetCtx);
+         targetCtx.restore();
+
+         if (mirror) {
+             targetCtx.save();
+             targetCtx.translate(cx, cy);
+             targetCtx.rotate(rad);
+             targetCtx.rotate(startRad);
+             targetCtx.scale(1, -1);
+             targetCtx.rotate(-startRad);
+             drawTheShape(targetCtx);
+             targetCtx.restore();
+         }
+      }
+      targetCtx.restore();
+  }
+
   function draw(e) {
     if (!isDrawing) return;
     
@@ -570,6 +654,16 @@ SOFTWARE.
     }
 
     const tool = document.querySelector('input[name="tool"]:checked').value;
+    
+    if (tool === 'rect' || tool === 'circle') {
+        isDrawingShape = true;
+        shapeStartX = x;
+        shapeStartY = y;
+        currentShapeX = x;
+        currentShapeY = y;
+        return;
+    }
+
     if (tool === 'fill') {
         const divDeg = getDivAngle();
         const cx = drawCanvas.width / 2;
@@ -744,6 +838,12 @@ SOFTWARE.
   const handleMove = (e) => {
     if (isPanning) {
       handlePan(e);
+    } else if (isDrawingShape) {
+      const pos = getMousePos(drawCanvas, e);
+      currentShapeX = pos.x;
+      currentShapeY = pos.y;
+      drawGuides(); // clear uiCanvas and redraw line guides
+      drawCurrentShape(uiCtx, shapeStartX, shapeStartY, currentShapeX, currentShapeY); // Render preview
     } else if (isDrawing) {
       draw(e);
     } else if (isDraggingStart || isDraggingEnd) {
@@ -781,6 +881,12 @@ SOFTWARE.
   const handleEnd = (e) => {
     if (e && e.type === 'touchend' && e.touches && e.touches.length > 0) {
         if (isPanning) isPanning = false;
+        if (isDrawingShape) {
+            drawCurrentShape(ctx, shapeStartX, shapeStartY, currentShapeX, currentShapeY);
+            isDrawingShape = false;
+            saveState();
+            drawGuides();
+        }
         if (isDrawing) { saveState(); isDrawing = false; }
         isDraggingStart = false;
         isDraggingEnd = false;
@@ -789,6 +895,12 @@ SOFTWARE.
     if (isPanning) {
       isPanning = false;
       drawCanvas.style.cursor = isSpaceDown ? 'grab' : 'default';
+    }
+    if (isDrawingShape) {
+        drawCurrentShape(ctx, shapeStartX, shapeStartY, currentShapeX, currentShapeY);
+        isDrawingShape = false;
+        saveState();
+        drawGuides();
     }
     if (isDrawing) { // Only save state if we were drawing
         saveState();
@@ -932,9 +1044,12 @@ SOFTWARE.
   
   toolRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
-        const isBrush = e.target.value === 'brush';
-        brushSettingsSection.style.display = isBrush ? 'flex' : 'none';
-        fillSettingsSection.style.display = isBrush ? 'none' : 'flex';
+        const val = e.target.value;
+        const isBrush = val === 'brush';
+        const isShape = val === 'rect' || val === 'circle';
+        brushSettingsSection.style.display = (isBrush || isShape) ? 'flex' : 'none';
+        fillSettingsSection.style.display = val === 'fill' ? 'flex' : 'none';
+        shapeSettingsSection.style.display = isShape ? 'flex' : 'none';
     });
   });
 
