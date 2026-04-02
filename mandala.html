@@ -138,15 +138,15 @@ SOFTWARE.
   }
 
   .tool-section {
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #eee;
+    position: relative;
+    margin: 10px 0;
+    padding: 14px 10px 10px 10px;
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
   }
 
   .tool-section:last-child {
-    border-bottom: none;
     margin-bottom: 0;
-    padding-bottom: 0;
   }
   
   label {
@@ -169,9 +169,18 @@ SOFTWARE.
   }
 
   .section-title {
+    position: absolute;
+    top: -9px;
+    left: 10px;
     font-weight: bold;
-    margin-right: 15px;
-    min-width: 120px;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0 6px;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 6px;
+    margin-right: 0;
+    min-width: auto;
   }
 
   details.shape-details {
@@ -221,6 +230,32 @@ SOFTWARE.
   #shape-rotate {
     width: 180px;
   }
+
+  #shape-preview {
+    width: 64px;
+    height: 64px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .shape-rotate-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+
+  .shape-controls-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+
+  .shape-controls-wrap label {
+    margin-right: 0;
+  }
 </style>
 </head>
 <body>
@@ -258,7 +293,7 @@ SOFTWARE.
 
     <div class="flex-row tool-section" id="brush-settings-section">
       <div class="section-title">Brush Settings</div>
-      <label>Brush Size: <button id="brush-dec">&lt;</button> <input type="range" id="brush-size" min="1" max="50" value="5"> <button id="brush-inc">&gt;</button> <span id="brush-val">5</span>px</label>
+      <label>Brush Size: <button id="brush-dec">&lt;</button> <input type="range" id="brush-size" min="1" max="50" value="3"> <button id="brush-inc">&gt;</button> <span id="brush-val">3</span>px</label>
     </div>
 
     <div class="flex-row tool-section" id="fill-settings-section" style="display: none;">
@@ -269,7 +304,14 @@ SOFTWARE.
     <div class="flex-row tool-section" id="shape-settings-section" style="display: none;">
       <div class="section-title">Shape Settings</div>
       <label>Fill Color: <input type="color" id="shape-fill-color" value="#ffffff"></label>
-      <label><input type="checkbox" id="shape-fill-transparent" checked> Transparent Fill</label>
+      <div class="shape-controls-wrap">
+        <label><input type="checkbox" id="shape-fill-transparent" checked> Transparent Fill</label>
+        <label>Rotate:
+          <input type="range" id="shape-rotate" min="0" max="360" step="0.1" value="0">
+          <span id="shape-rotate-val">0</span>°
+        </label>
+        <canvas id="shape-preview" width="64" height="64" aria-label="Shape rotation preview"></canvas>
+      </div>
     </div>
 
     <div class="flex-row tool-section" id="svg-shapes-section">
@@ -278,10 +320,6 @@ SOFTWARE.
         <summary>Choose Shape</summary>
         <div class="shape-grid" id="shape-grid"></div>
       </details>
-      <label>Rotate:
-        <input type="range" id="shape-rotate" min="0" max="360" step="0.1" value="0">
-        <span id="shape-rotate-val">0</span>°
-      </label>
     </div>
 
     <div class="flex-row tool-section">
@@ -352,6 +390,8 @@ SOFTWARE.
   const shapeSettingsSection = document.getElementById('shape-settings-section');
   const shapeFillColor = document.getElementById('shape-fill-color');
   const shapeFillTransparent = document.getElementById('shape-fill-transparent');
+  const shapePreviewCanvas = document.getElementById('shape-preview');
+  const shapePreviewCtx = shapePreviewCanvas.getContext('2d');
 
   const svgShapesSection = document.getElementById('svg-shapes-section');
   const shapesDetails = document.getElementById('shapes-details');
@@ -389,6 +429,12 @@ SOFTWARE.
   let currentShapeX = 0;
   let currentShapeY = 0;
 
+  let isDrawingSvgShape = false;
+  let svgStartX = 0;
+  let svgStartY = 0;
+  let svgCurrentX = 0;
+  let svgCurrentY = 0;
+
   // --- SVG Shape Tool State ---
   const SHAPES_MAX = 24;
   let selectedSvgShapeId = null; // "01".."64"
@@ -397,9 +443,84 @@ SOFTWARE.
 
   let shapeRotateDeg = 0;
 
+  let svgStaticScaleFactor = 0;
+
+  function getBrushPx() {
+    return Math.max(1, parseInt(brushSizeIn.value) || 1);
+  }
+
   function getShapeRotateRad() {
     const d = (shapeRotateDeg % 360 + 360) % 360;
     return d * Math.PI / 180;
+  }
+
+  function redrawShapeWidget() {
+    const tool = getActiveTool();
+
+    // Only show meaningful preview for rect/svg.
+    if (tool !== 'rect' && tool !== 'svg') {
+      shapePreviewCtx.clearRect(0, 0, shapePreviewCanvas.width, shapePreviewCanvas.height);
+      return;
+    }
+
+    const w = shapePreviewCanvas.width;
+    const h = shapePreviewCanvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const rot = getShapeRotateRad();
+
+    shapePreviewCtx.clearRect(0, 0, w, h);
+
+    if (tool === 'rect') {
+      const strokeColor = paintColorIn.value;
+      const isTransparent = shapeFillTransparent.checked;
+      const fillColor = shapeFillColor.value;
+
+      const baseLineWidth = Math.max(1, Math.min(10, Math.round(getBrushPx() / 2)));
+      const rectW = w * 0.55;
+      const rectH = h * 0.35;
+
+      shapePreviewCtx.save();
+      shapePreviewCtx.translate(cx, cy);
+      if (rot) shapePreviewCtx.rotate(rot);
+
+      shapePreviewCtx.lineWidth = baseLineWidth;
+      shapePreviewCtx.strokeStyle = strokeColor;
+      shapePreviewCtx.fillStyle = fillColor;
+
+      shapePreviewCtx.beginPath();
+      shapePreviewCtx.rect(-rectW / 2, -rectH / 2, rectW, rectH);
+      if (!isTransparent) shapePreviewCtx.fill();
+      shapePreviewCtx.stroke();
+      shapePreviewCtx.restore();
+      return;
+    }
+
+    // SVG preview
+    if (!selectedSvgShapeId) return;
+    ensureSvgShapeLoaded(selectedSvgShapeId)
+      .then(entry => {
+        // Fit SVG into widget bounds.
+        const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height) || 1;
+        const maxSize = Math.min(w, h) * 0.72;
+        const scaleFactor = maxSize / maxDim;
+
+        const strokePxInWidget = Math.max(1, Math.min(8, Math.round(getBrushPx() / 3)));
+        const strokeWidth = scaleFactor > 0 ? (strokePxInWidget / scaleFactor) : strokePxInWidget;
+
+        return getColoredSvgImage(entry, { strokeWidth })
+          .then(colored => colored.ready.then(() => colored))
+          .then(colored => {
+            shapePreviewCtx.save();
+            shapePreviewCtx.translate(cx, cy);
+            if (rot) shapePreviewCtx.rotate(rot);
+            shapePreviewCtx.drawImage(colored.img, -maxSize / 2, -maxSize / 2, maxSize, maxSize);
+            shapePreviewCtx.restore();
+          });
+      })
+      .catch(() => {
+        // ignore
+      });
   }
 
   function getActiveTool() {
@@ -409,6 +530,40 @@ SOFTWARE.
 
   function getShapeUrlById(id) {
     return `Shapes/PARTS-${id}.svg`;
+  }
+
+  function computeSvgStaticScaleFactor(viewBox) {
+    const divDeg = getDivAngle();
+    if (divDeg <= 0) return 0;
+
+    // Compute chord width at the "middle" radius of the wedge.
+    const w = drawCanvas.width;
+    const h = drawCanvas.height;
+    if (!w || !h) return 0;
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const guideRadius = Math.min(cx, cy) - ANCHOR_RADIUS - 5;
+    const midR = Math.max(1, guideRadius / 2);
+    const halfRad = (divDeg * Math.PI / 180) / 2;
+    const chord = 2 * midR * Math.sin(halfRad);
+
+    const maxDim = Math.max(viewBox.width, viewBox.height);
+    if (maxDim <= 0) return 0;
+
+    // Leave a small margin relative to brush size so the outline doesn't cross the guides.
+    const margin = Math.max(2, getBrushPx());
+    const maxSize = Math.max(0, (chord - margin) * 0.9);
+    if (maxSize <= 0.5) return 0;
+
+    return maxSize / maxDim;
+  }
+
+  function updateSvgStaticScaleIfPossible() {
+    if (!selectedSvgShapeId) return;
+    const entry = svgShapeCache.get(selectedSvgShapeId);
+    if (!entry) return;
+    svgStaticScaleFactor = computeSvgStaticScaleFactor(entry.viewBox);
   }
 
   function parseViewBox(svgText) {
@@ -560,6 +715,16 @@ SOFTWARE.
       svgToolRadio.checked = true;
       svgToolRadio.dispatchEvent(new Event('change'));
     }
+
+    ensureSvgShapeLoaded(id)
+      .then(entry => {
+        svgStaticScaleFactor = computeSvgStaticScaleFactor(entry.viewBox);
+        redrawSvgPreviewIfNeeded();
+        redrawShapeWidget();
+      })
+      .catch(() => {
+        // ignore
+      });
   }
 
   function buildShapeGrid() {
@@ -605,7 +770,7 @@ SOFTWARE.
     return maxSize / maxDim;
   }
 
-  function drawSvgShapeAtPointer(targetCtx, shapeEntry, posX, posY, imgToDraw) {
+  function drawSvgShapeAtPointer(targetCtx, shapeEntry, posX, posY, imgToDraw, { scaleFactorOverride } = {}) {
     const tool = getActiveTool();
     if (tool !== 'svg') return;
     if (!shapeEntry || !imgToDraw) return;
@@ -617,7 +782,9 @@ SOFTWARE.
     const startRad = (getStartAngle() - 90) * Math.PI / 180;
     const shapeRot = getShapeRotateRad();
 
-    const scaleFactor = getSvgShapeScaleForPos(posX, posY, shapeEntry.viewBox);
+    const scaleFactor = (typeof scaleFactorOverride === 'number' && Number.isFinite(scaleFactorOverride) && scaleFactorOverride > 0)
+      ? scaleFactorOverride
+      : (svgStaticScaleFactor || getSvgShapeScaleForPos(posX, posY, shapeEntry.viewBox));
     if (!scaleFactor) return;
 
     const drawW = shapeEntry.viewBox.width * scaleFactor;
@@ -743,6 +910,7 @@ SOFTWARE.
     historyIndex = 0;
 
     drawGuides();
+    updateSvgStaticScaleIfPossible();
   }
 
   function drawGuides() {
@@ -912,6 +1080,7 @@ SOFTWARE.
       const divDeg = getDivAngle();
       const cx = drawCanvas.width / 2, cy = drawCanvas.height / 2;
       const startRad = (getStartAngle() - 90) * Math.PI / 180;
+      const shapeRot = getShapeRotateRad();
 
       const strokeColor = paintColorIn.value;
       const lineWidth = parseInt(brushSizeIn.value);
@@ -941,7 +1110,15 @@ SOFTWARE.
           if (tool === 'rect') {
               const w = endX - startX;
               const h = endY - startY;
-              ctx.rect(startX - cx, startY - cy, w, h);
+              const centerLocalX = ((startX + endX) / 2) - cx;
+              const centerLocalY = ((startY + endY) / 2) - cy;
+              if (shapeRot) {
+                ctx.translate(centerLocalX, centerLocalY);
+                ctx.rotate(shapeRot);
+                ctx.rect(-w / 2, -h / 2, w, h);
+              } else {
+                ctx.rect(startX - cx, startY - cy, w, h);
+              }
           } else if (tool === 'circle') {
               const r = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
               ctx.arc(startX - cx, startY - cy, r, 0, 2 * Math.PI);
@@ -1042,23 +1219,11 @@ SOFTWARE.
 
     if (tool === 'svg') {
         if (!selectedSvgShapeId) return;
-        ensureSvgShapeLoaded(selectedSvgShapeId)
-          .then(entry => {
-            const scaleFactor = getSvgShapeScaleForPos(x, y, entry.viewBox);
-            const brushPx = Math.max(1, parseInt(brushSizeIn.value) || 1);
-            const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
-            return getColoredSvgImage(entry, { strokeWidth })
-              .then(colored => colored.ready.then(() => colored))
-              .then(colored => {
-                // Stamp to the drawing canvas.
-                drawSvgShapeAtPointer(ctx, entry, x, y, colored.img);
-                saveState();
-                drawGuides();
-              });
-          })
-          .catch(() => {
-            // ignore
-          });
+        isDrawingSvgShape = true;
+        svgStartX = x;
+        svgStartY = y;
+        svgCurrentX = x;
+        svgCurrentY = y;
         return;
     }
     
@@ -1245,6 +1410,39 @@ SOFTWARE.
   const handleMove = (e) => {
     if (isPanning) {
       handlePan(e);
+    } else if (isDrawingSvgShape) {
+      const pos = getMousePos(drawCanvas, e);
+      svgCurrentX = pos.x;
+      svgCurrentY = pos.y;
+
+      if (!selectedSvgShapeId) {
+        drawGuides();
+        return;
+      }
+
+      drawGuides();
+      ensureSvgShapeLoaded(selectedSvgShapeId)
+        .then(entry => {
+          const dx = svgCurrentX - svgStartX;
+          const dy = svgCurrentY - svgStartY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
+          const dragScale = (maxDim > 0 && dist > 0) ? ((2 * dist) / maxDim) : 0;
+          const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
+          const brushPx = getBrushPx();
+          const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+
+          return getColoredSvgImage(entry, { strokeWidth })
+            .then(colored => colored.ready.then(() => colored))
+            .then(colored => {
+              // Preview at the drag start position.
+              drawSvgShapeAtPointer(uiCtx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
+            });
+        })
+        .catch(() => {
+          // ignore
+        });
     } else if (isDrawingShape) {
       const pos = getMousePos(drawCanvas, e);
       currentShapeX = pos.x;
@@ -1262,14 +1460,15 @@ SOFTWARE.
       drawGuides();
       ensureSvgShapeLoaded(selectedSvgShapeId)
         .then(entry => {
-          const scaleFactor = getSvgShapeScaleForPos(pos.x, pos.y, entry.viewBox);
-          const brushPx = Math.max(1, parseInt(brushSizeIn.value) || 1);
+          updateSvgStaticScaleIfPossible();
+          const scaleFactor = svgStaticScaleFactor || getSvgShapeScaleForPos(pos.x, pos.y, entry.viewBox);
+          const brushPx = getBrushPx();
           const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
           return getColoredSvgImage(entry, { strokeWidth })
             .then(colored => colored.ready.then(() => colored))
             .then(colored => {
               // Draw preview on ui canvas.
-              drawSvgShapeAtPointer(uiCtx, entry, pos.x, pos.y, colored.img);
+              drawSvgShapeAtPointer(uiCtx, entry, pos.x, pos.y, colored.img, { scaleFactorOverride: scaleFactor });
             });
         })
         .catch(() => {
@@ -1312,6 +1511,34 @@ SOFTWARE.
   const handleEnd = (e) => {
     if (e && e.type === 'touchend' && e.touches && e.touches.length > 0) {
         if (isPanning) isPanning = false;
+        if (isDrawingSvgShape) {
+            const dx = svgCurrentX - svgStartX;
+            const dy = svgCurrentY - svgStartY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const isClick = dist < 3;
+
+            ensureSvgShapeLoaded(selectedSvgShapeId)
+              .then(entry => {
+                const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
+                const dragScale = (!isClick && maxDim > 0) ? ((2 * dist) / maxDim) : 0;
+                const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
+                const brushPx = getBrushPx();
+                const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+
+                return getColoredSvgImage(entry, { strokeWidth })
+                  .then(colored => colored.ready.then(() => colored))
+                  .then(colored => {
+                    drawSvgShapeAtPointer(ctx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
+                    saveState();
+                    drawGuides();
+                  });
+              })
+              .catch(() => {
+                // ignore
+              });
+
+            isDrawingSvgShape = false;
+        }
         if (isDrawingShape) {
             drawCurrentShape(ctx, shapeStartX, shapeStartY, currentShapeX, currentShapeY);
             isDrawingShape = false;
@@ -1326,6 +1553,35 @@ SOFTWARE.
     if (isPanning) {
       isPanning = false;
       drawCanvas.style.cursor = isSpaceDown ? 'grab' : 'default';
+    }
+
+    if (isDrawingSvgShape) {
+      const dx = svgCurrentX - svgStartX;
+      const dy = svgCurrentY - svgStartY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const isClick = dist < 3;
+
+      ensureSvgShapeLoaded(selectedSvgShapeId)
+        .then(entry => {
+          const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
+          const dragScale = (!isClick && maxDim > 0) ? ((2 * dist) / maxDim) : 0;
+          const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
+          const brushPx = getBrushPx();
+          const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+
+          return getColoredSvgImage(entry, { strokeWidth })
+            .then(colored => colored.ready.then(() => colored))
+            .then(colored => {
+              drawSvgShapeAtPointer(ctx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
+              saveState();
+              drawGuides();
+            });
+        })
+        .catch(() => {
+          // ignore
+        });
+
+      isDrawingSvgShape = false;
     }
     if (isDrawingShape) {
         drawCurrentShape(ctx, shapeStartX, shapeStartY, currentShapeX, currentShapeY);
@@ -1484,6 +1740,8 @@ SOFTWARE.
         shapeSettingsSection.style.display = (isShape || isSvg) ? 'flex' : 'none';
         // Shape picker stays available, but opening it is most useful for the svg tool.
         if (!isSvg) shapesDetails.open = false;
+
+        redrawShapeWidget();
     });
   });
 
@@ -1495,12 +1753,14 @@ SOFTWARE.
     brushSizeIn.value = Math.max(1, parseInt(brushSizeIn.value) - 1);
     brushVal.textContent = brushSizeIn.value;
     redrawSvgPreviewIfNeeded();
+    redrawShapeWidget();
   });
   
   brushIncBtn.addEventListener('click', () => {
     brushSizeIn.value = Math.min(50, parseInt(brushSizeIn.value) + 1);
     brushVal.textContent = brushSizeIn.value;
     redrawSvgPreviewIfNeeded();
+    redrawShapeWidget();
   });
 
   bgColorIn.addEventListener('input', () => {
@@ -1523,13 +1783,14 @@ SOFTWARE.
     drawGuides();
     ensureSvgShapeLoaded(selectedSvgShapeId)
       .then(entry => {
-        const scaleFactor = getSvgShapeScaleForPos(lastHoverPos.x, lastHoverPos.y, entry.viewBox);
-        const brushPx = Math.max(1, parseInt(brushSizeIn.value) || 1);
+        updateSvgStaticScaleIfPossible();
+        const scaleFactor = svgStaticScaleFactor || getSvgShapeScaleForPos(lastHoverPos.x, lastHoverPos.y, entry.viewBox);
+        const brushPx = getBrushPx();
         const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
         return getColoredSvgImage(entry, { strokeWidth })
           .then(colored => colored.ready.then(() => colored))
           .then(colored => {
-            drawSvgShapeAtPointer(uiCtx, entry, lastHoverPos.x, lastHoverPos.y, colored.img);
+            drawSvgShapeAtPointer(uiCtx, entry, lastHoverPos.x, lastHoverPos.y, colored.img, { scaleFactorOverride: scaleFactor });
           });
       })
       .catch(() => {
@@ -1539,14 +1800,18 @@ SOFTWARE.
 
   // Keep SVG preview in sync with brush size changes.
   brushSizeIn.addEventListener('input', redrawSvgPreviewIfNeeded);
+  brushSizeIn.addEventListener('input', redrawShapeWidget);
 
   shapeFillColor.addEventListener('input', redrawSvgPreviewIfNeeded);
   shapeFillTransparent.addEventListener('change', redrawSvgPreviewIfNeeded);
+  shapeFillColor.addEventListener('input', redrawShapeWidget);
+  shapeFillTransparent.addEventListener('change', redrawShapeWidget);
 
   shapeRotateIn.addEventListener('input', () => {
     shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
     shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
     redrawSvgPreviewIfNeeded();
+    redrawShapeWidget();
   });
   
   startAngleIn.addEventListener('input', () => {
@@ -1560,6 +1825,7 @@ SOFTWARE.
       return;
     }
     drawGuides();
+    updateSvgStaticScaleIfPossible();
   }));
   customDivAngleIn.addEventListener('input', () => {
     if (!startAngleUserModified) {
@@ -1567,6 +1833,7 @@ SOFTWARE.
       return;
     }
     drawGuides();
+    updateSvgStaticScaleIfPossible();
   });
 
   const canvasContainer = document.getElementById('canvas-container');
@@ -1620,6 +1887,7 @@ SOFTWARE.
   buildShapeGrid();
   shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
   shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
+  redrawShapeWidget();
   initCanvas();
 </script>
 </body>
