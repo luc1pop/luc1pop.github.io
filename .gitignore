@@ -1,0 +1,2 @@
+# Ignore local Copilot/agent notes (if present in this repo)
+agent.md

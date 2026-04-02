@@ -86,34 +86,51 @@ SOFTWARE.
   }
   
   #bottom-panel {
-    bottom: 0;
-    left: 50%;
-    width: 90%;
-    max-width: 900px;
-    transform: translate(-50%, 0);
+    top: 50%;
+    left: 0;
+    bottom: auto;
+    width: min(420px, 92vw);
+    transform: translate(0, -50%);
+    border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
     transition: transform 0.3s ease;
     z-index: 20;
-    padding-top: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  #tools-content {
+    max-height: 92vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 15px;
+    padding-top: 15px;
+    box-sizing: border-box;
   }
 
   #bottom-panel.closed {
-    /* Hides the panel but leaves the toggle button visible */
-    transform: translate(-50%, calc(100% - 35px));
+    /* Hides the panel but leaves the toggle tab visible */
+    transform: translate(calc(-100% + 35px), -50%);
   }
 
   .toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: -35px;
+    width: 35px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     cursor: pointer;
     font-weight: bold;
-    height: 35px;
-    line-height: 35px;
     background: #e0e0e0;
-    margin: 0 -15px 15px -15px;
-    border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
     user-select: none;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
   }
 
   .toggle-btn:hover {
@@ -156,6 +173,54 @@ SOFTWARE.
     margin-right: 15px;
     min-width: 120px;
   }
+
+  details.shape-details {
+    width: 100%;
+  }
+
+  details.shape-details > summary {
+    cursor: pointer;
+    user-select: none;
+    font-weight: bold;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f5f5f5;
+    display: inline-block;
+  }
+
+  .shape-grid {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .shape-item {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    padding: 6px;
+    cursor: pointer;
+  }
+
+  .shape-item.selected {
+    background: #cce5ff;
+    border-color: #3399ff;
+  }
+
+  .shape-thumb {
+    width: 100%;
+    height: 70px;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+  }
+
+  #shape-rotate {
+    width: 180px;
+  }
 </style>
 </head>
 <body>
@@ -169,76 +234,91 @@ SOFTWARE.
 <!-- Bottom Tools Popup -->
 <div id="bottom-panel" class="panel closed">
   <div class="toggle-btn" id="toggle-bottom">▲ Tools (100%) ▲</div>
-  
-  <div class="flex-row tool-section">
-    <div class="section-title">Canvas Settings</div>
-    <label>Width: <input type="number" id="c-width" value="600"></label>
-    <label>Height: <input type="number" id="c-height" value="600"></label>
-    <label><input type="checkbox" id="c-square" checked> Make mandala square</label>
-    <label><input type="checkbox" id="c-transparent" checked> Transparent</label>
-    <button id="apply-settings">Apply Settings</button>
-    <button id="clear-canvas">Clear Canvas</button>
-    <button id="export-btn">Export Image</button>
-  </div>
 
-  <div class="flex-row tool-section">
-    <div class="section-title">Painting Tool</div>
-    <label><input type="radio" name="tool" value="brush" checked> Brush</label>
-    <label><input type="radio" name="tool" value="fill"> Fill Bucket</label>
-    <label><input type="radio" name="tool" value="rect"> Rectangle</label>
-    <label><input type="radio" name="tool" value="circle"> Circle</label>
-  </div>
+  <div id="tools-content">
+    <div class="flex-row tool-section">
+      <div class="section-title">Canvas Settings</div>
+      <label>Width: <input type="number" id="c-width" value="800"></label>
+      <label>Height: <input type="number" id="c-height" value="800"></label>
+      <label><input type="checkbox" id="c-square" checked> Make mandala square</label>
+      <label><input type="checkbox" id="c-transparent" checked> Transparent</label>
+      <button id="apply-settings">Apply Settings</button>
+      <button id="clear-canvas">Clear Canvas</button>
+      <button id="export-btn">Export Image</button>
+    </div>
 
-  <div class="flex-row tool-section" id="brush-settings-section">
-    <div class="section-title">Brush Settings</div>
-    <label>Brush Size: <button id="brush-dec">&lt;</button> <input type="range" id="brush-size" min="1" max="50" value="5"> <button id="brush-inc">&gt;</button> <span id="brush-val">5</span>px</label>
-  </div>
+    <div class="flex-row tool-section">
+      <div class="section-title">Painting Tool</div>
+      <label><input type="radio" name="tool" value="brush" checked> Brush</label>
+      <label><input type="radio" name="tool" value="fill"> Fill Bucket</label>
+      <label><input type="radio" name="tool" value="rect"> Rectangle</label>
+      <label><input type="radio" name="tool" value="circle"> Circle</label>
+      <label><input type="radio" name="tool" value="svg"> Shapes</label>
+    </div>
 
-  <div class="flex-row tool-section" id="fill-settings-section" style="display: none;">
-    <div class="section-title">Fill Bucket Settings</div>
-    <label>Sensitivity: <input type="range" id="fill-sensitivity" min="0" max="100" value="20"> <span id="fill-sensitivity-val">20</span></label>
-  </div>
+    <div class="flex-row tool-section" id="brush-settings-section">
+      <div class="section-title">Brush Settings</div>
+      <label>Brush Size: <button id="brush-dec">&lt;</button> <input type="range" id="brush-size" min="1" max="50" value="5"> <button id="brush-inc">&gt;</button> <span id="brush-val">5</span>px</label>
+    </div>
 
-  <div class="flex-row tool-section" id="shape-settings-section" style="display: none;">
-    <div class="section-title">Shape Settings</div>
-    <label>Fill Color: <input type="color" id="shape-fill-color" value="#ffffff"></label>
-    <label><input type="checkbox" id="shape-fill-transparent" checked> Transparent Fill</label>
-  </div>
+    <div class="flex-row tool-section" id="fill-settings-section" style="display: none;">
+      <div class="section-title">Fill Bucket Settings</div>
+      <label>Sensitivity: <input type="range" id="fill-sensitivity" min="0" max="100" value="20"> <span id="fill-sensitivity-val">20</span></label>
+    </div>
 
-  <div class="flex-row tool-section">
-    <div class="section-title">Color Settings</div>
-    <label>Paint Color: <input type="color" id="paint-color" value="#000000"></label>
-    <label>Background Color: <input type="color" id="bg-color" value="#ffffff"></label>
-  </div>
+    <div class="flex-row tool-section" id="shape-settings-section" style="display: none;">
+      <div class="section-title">Shape Settings</div>
+      <label>Fill Color: <input type="color" id="shape-fill-color" value="#ffffff"></label>
+      <label><input type="checkbox" id="shape-fill-transparent" checked> Transparent Fill</label>
+    </div>
 
-  <div class="flex-row tool-section">
-    <div class="section-title">Dividing Tools</div>
-    <label>Starting Angle: <input type="number" id="start-angle" value="0" min="0" max="360" step="0.1">°</label>
-    <label><input type="checkbox" id="mirror-draw"> Mirror draw</label>
-  </div>
-  
-  <div class="flex-row tool-section">
-    <div class="section-title">Dividing Angle</div>
-    <label><input type="radio" name="div-angle" value="10"> 10°</label>
-    <label><input type="radio" name="div-angle" value="15"> 15°</label>
-    <label><input type="radio" name="div-angle" value="20"> 20°</label>
-    <label><input type="radio" name="div-angle" value="30" checked> 30°</label>
-    <label><input type="radio" name="div-angle" value="40"> 40°</label>
-    <label><input type="radio" name="div-angle" value="45"> 45°</label>
-    <label><input type="radio" name="div-angle" value="60"> 60°</label>
-    <label><input type="radio" name="div-angle" value="90"> 90°</label>
-    <label><input type="radio" name="div-angle" value="120"> 120°</label>
-    <label>
-      <input type="radio" name="div-angle" value="custom"> Custom
-      <input type="number" id="custom-div-angle" value="45" min="0.1" max="180" step="0.1" disabled>°
-    </label>
-  </div>
+    <div class="flex-row tool-section" id="svg-shapes-section">
+      <div class="section-title">Shapes</div>
+      <details class="shape-details" id="shapes-details">
+        <summary>Choose Shape</summary>
+        <div class="shape-grid" id="shape-grid"></div>
+      </details>
+      <label>Rotate:
+        <input type="range" id="shape-rotate" min="0" max="360" step="0.1" value="0">
+        <span id="shape-rotate-val">0</span>°
+      </label>
+    </div>
 
-  <div class="flex-row tool-section">
-    <div class="section-title">View Controls</div>
-    <button id="zoom-in">Zoom In</button>
-    <button id="zoom-out">Zoom Out</button>
-    <button id="zoom-reset">Reset View</button>
+    <div class="flex-row tool-section">
+      <div class="section-title">Color Settings</div>
+      <label>Paint Color: <input type="color" id="paint-color" value="#000000"></label>
+      <label>Background Color: <input type="color" id="bg-color" value="#ffffff"></label>
+    </div>
+
+    <div class="flex-row tool-section">
+      <div class="section-title">Dividing Tools</div>
+      <label>Starting Angle: <input type="number" id="start-angle" value="0" min="0" max="360" step="0.1">°</label>
+      <label><input type="checkbox" id="mirror-draw"> Mirror draw</label>
+    </div>
+    
+    <div class="flex-row tool-section">
+      <div class="section-title">Dividing Angle</div>
+      <label><input type="radio" name="div-angle" value="10"> 10°</label>
+      <label><input type="radio" name="div-angle" value="15"> 15°</label>
+      <label><input type="radio" name="div-angle" value="20"> 20°</label>
+      <label><input type="radio" name="div-angle" value="30" checked> 30°</label>
+      <label><input type="radio" name="div-angle" value="40"> 40°</label>
+      <label><input type="radio" name="div-angle" value="45"> 45°</label>
+      <label><input type="radio" name="div-angle" value="60"> 60°</label>
+      <label><input type="radio" name="div-angle" value="90"> 90°</label>
+      <label><input type="radio" name="div-angle" value="120"> 120°</label>
+      <label>
+        <input type="radio" name="div-angle" value="custom"> Custom
+        <input type="number" id="custom-div-angle" value="45" min="0.1" max="180" step="0.1" disabled>°
+      </label>
+    </div>
+
+    <div class="flex-row tool-section">
+      <div class="section-title">View Controls</div>
+      <button id="zoom-in">Zoom In</button>
+      <button id="zoom-out">Zoom Out</button>
+      <button id="zoom-reset">Reset View</button>
+    </div>
   </div>
 </div>
 
@@ -272,11 +352,21 @@ SOFTWARE.
   const shapeSettingsSection = document.getElementById('shape-settings-section');
   const shapeFillColor = document.getElementById('shape-fill-color');
   const shapeFillTransparent = document.getElementById('shape-fill-transparent');
+
+  const svgShapesSection = document.getElementById('svg-shapes-section');
+  const shapesDetails = document.getElementById('shapes-details');
+  const shapeGrid = document.getElementById('shape-grid');
+  const shapeRotateIn = document.getElementById('shape-rotate');
+  const shapeRotateVal = document.getElementById('shape-rotate-val');
   
   const startAngleIn = document.getElementById('start-angle');
   const mirrorDrawCheck = document.getElementById('mirror-draw');
   const divAngleRadios = document.querySelectorAll('input[name="div-angle"]');
   const customDivAngleIn = document.getElementById('custom-div-angle');
+
+  // Starting angle defaults to half of the dividing angle until the user changes it.
+  let startAngleUserModified = false;
+  let isAutoSettingStartAngle = false;
 
   const bgPattern = document.getElementById('bg-pattern');
   const zoomInBtn = document.getElementById('zoom-in');
@@ -298,6 +388,292 @@ SOFTWARE.
   let shapeStartY = 0;
   let currentShapeX = 0;
   let currentShapeY = 0;
+
+  // --- SVG Shape Tool State ---
+  const SHAPES_MAX = 24;
+  let selectedSvgShapeId = null; // "01".."64"
+  const svgShapeCache = new Map();
+  let lastHoverPos = null; // {x,y} in canvas coords
+
+  let shapeRotateDeg = 0;
+
+  function getShapeRotateRad() {
+    const d = (shapeRotateDeg % 360 + 360) % 360;
+    return d * Math.PI / 180;
+  }
+
+  function getActiveTool() {
+    const checked = document.querySelector('input[name="tool"]:checked');
+    return checked ? checked.value : 'brush';
+  }
+
+  function getShapeUrlById(id) {
+    return `Shapes/PARTS-${id}.svg`;
+  }
+
+  function parseViewBox(svgText) {
+    const m = /viewBox\s*=\s*"\s*([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)\s*"/i.exec(svgText);
+    if (!m) return { x: 0, y: 0, width: 100, height: 100 };
+    const width = parseFloat(m[3]);
+    const height = parseFloat(m[4]);
+    return {
+      x: parseFloat(m[1]) || 0,
+      y: parseFloat(m[2]) || 0,
+      width: Number.isFinite(width) && width > 0 ? width : 100,
+      height: Number.isFinite(height) && height > 0 ? height : 100,
+    };
+  }
+
+  async function ensureSvgShapeLoaded(id) {
+    if (svgShapeCache.has(id)) return svgShapeCache.get(id);
+
+    const url = getShapeUrlById(id);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+
+    const ready = new Promise((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error(`Failed to load ${url}`));
+    });
+
+    const entry = {
+      id,
+      url,
+      img,
+      svgText: null,
+      viewBox: { x: 0, y: 0, width: 100, height: 100 },
+      ready,
+      coloredImages: new Map(), // key -> { img, ready, objectUrl }
+    };
+    svgShapeCache.set(id, entry);
+
+    // Best-effort parse viewBox for sizing.
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const text = await resp.text();
+        entry.svgText = text;
+        entry.viewBox = parseViewBox(text);
+      }
+    } catch {
+      // ignore
+    }
+    return entry;
+  }
+
+  function getCurrentShapeFill() {
+    return {
+      color: shapeFillColor.value,
+      transparent: shapeFillTransparent.checked,
+    };
+  }
+
+  function recolorSvgText(svgText, { color, transparent }, { strokeWidth } = {}) {
+    try {
+      const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+      // If parsing fails, fall back to the original.
+      if (doc.querySelector('parsererror')) return svgText;
+
+      const fillValue = transparent ? 'none' : color;
+      doc.querySelectorAll('[fill]').forEach(el => {
+        const v = (el.getAttribute('fill') || '').trim().toLowerCase();
+        if (!v || v === 'none') return;
+        el.setAttribute('fill', fillValue);
+      });
+
+      if (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0) {
+        const strokeWidthStr = String(strokeWidth);
+        doc.querySelectorAll('[stroke]').forEach(el => {
+          const v = (el.getAttribute('stroke') || '').trim().toLowerCase();
+          if (!v || v === 'none') return;
+          el.setAttribute('stroke-width', strokeWidthStr);
+        });
+        // Best-effort: also update existing stroke-width attributes.
+        doc.querySelectorAll('[stroke-width]').forEach(el => {
+          el.setAttribute('stroke-width', strokeWidthStr);
+        });
+      }
+
+      // Also handle inline style="fill:..." cases (best-effort).
+      doc.querySelectorAll('[style]').forEach(el => {
+        const style = el.getAttribute('style');
+        if (!style) return;
+        let nextStyle = style;
+        if (/fill\s*:/i.test(nextStyle)) {
+          nextStyle = nextStyle.replace(/fill\s*:\s*[^;]+/ig, `fill:${fillValue}`);
+        }
+        if (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0) {
+          if (/stroke-width\s*:/i.test(nextStyle)) {
+            nextStyle = nextStyle.replace(/stroke-width\s*:\s*[^;]+/ig, `stroke-width:${strokeWidth}`);
+          }
+        }
+        el.setAttribute('style', nextStyle);
+      });
+
+      return new XMLSerializer().serializeToString(doc);
+    } catch {
+      return svgText;
+    }
+  }
+
+  async function getColoredSvgImage(entry, { strokeWidth } = {}) {
+    const settings = getCurrentShapeFill();
+    const strokeKey = (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0)
+      ? `|sw:${Math.round(strokeWidth * 100) / 100}`
+      : '';
+    const cacheKey = `${settings.transparent ? 't' : 'c'}|${settings.color}${strokeKey}`;
+    const existing = entry.coloredImages.get(cacheKey);
+    if (existing) return existing;
+
+    const svgText = entry.svgText;
+    if (!svgText) {
+      // If we couldn't fetch/parse the SVG text, fall back to the raw image.
+      return { img: entry.img, ready: entry.ready, objectUrl: null };
+    }
+
+    const coloredText = recolorSvgText(svgText, settings, { strokeWidth });
+    const blob = new Blob([coloredText], { type: 'image/svg+xml' });
+    const objectUrl = URL.createObjectURL(blob);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = objectUrl;
+    const ready = new Promise((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Failed to load recolored SVG'));
+    });
+
+    const created = { img, ready, objectUrl };
+    entry.coloredImages.set(cacheKey, created);
+    return created;
+  }
+
+  function setSelectedSvgShape(id) {
+    selectedSvgShapeId = id;
+    Array.from(shapeGrid.querySelectorAll('.shape-item')).forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.shapeId === id);
+    });
+
+    // Selecting a shape implies using the Shapes tool.
+    const svgToolRadio = document.querySelector('input[name="tool"][value="svg"]');
+    if (svgToolRadio && !svgToolRadio.checked) {
+      svgToolRadio.checked = true;
+      svgToolRadio.dispatchEvent(new Event('change'));
+    }
+  }
+
+  function buildShapeGrid() {
+    shapeGrid.innerHTML = '';
+    for (let i = 1; i <= SHAPES_MAX; i++) {
+      const id = String(i).padStart(2, '0');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'shape-item';
+      btn.dataset.shapeId = id;
+
+      const img = document.createElement('img');
+      img.className = 'shape-thumb';
+      img.alt = `Shape ${id}`;
+      img.src = getShapeUrlById(id);
+      img.onerror = () => {
+        // If the SVG doesn't exist, remove it from the grid.
+        btn.remove();
+        if (selectedSvgShapeId === id) selectedSvgShapeId = null;
+      };
+      btn.appendChild(img);
+
+      btn.addEventListener('click', () => setSelectedSvgShape(id));
+
+      shapeGrid.appendChild(btn);
+    }
+  }
+
+  function getSvgShapeScaleForPos(posX, posY, viewBox) {
+    const cx = drawCanvas.width / 2;
+    const cy = drawCanvas.height / 2;
+    const dx = posX - cx;
+    const dy = posY - cy;
+    const r = Math.sqrt(dx * dx + dy * dy);
+    const divDeg = getDivAngle();
+    const halfRad = (divDeg * Math.PI / 180) / 2;
+    const chord = 2 * r * Math.sin(halfRad);
+    const margin = Math.max(2, parseInt(brushSizeIn.value) || 0);
+    const maxSize = Math.max(0, (chord - margin) * 0.9);
+
+    const maxDim = Math.max(viewBox.width, viewBox.height);
+    if (maxDim <= 0 || maxSize <= 0.5) return 0;
+    return maxSize / maxDim;
+  }
+
+  function drawSvgShapeAtPointer(targetCtx, shapeEntry, posX, posY, imgToDraw) {
+    const tool = getActiveTool();
+    if (tool !== 'svg') return;
+    if (!shapeEntry || !imgToDraw) return;
+
+    const mirror = mirrorDrawCheck.checked;
+    const divDeg = getDivAngle();
+    const cx = drawCanvas.width / 2;
+    const cy = drawCanvas.height / 2;
+    const startRad = (getStartAngle() - 90) * Math.PI / 180;
+    const shapeRot = getShapeRotateRad();
+
+    const scaleFactor = getSvgShapeScaleForPos(posX, posY, shapeEntry.viewBox);
+    if (!scaleFactor) return;
+
+    const drawW = shapeEntry.viewBox.width * scaleFactor;
+    const drawH = shapeEntry.viewBox.height * scaleFactor;
+
+    const x0 = (posX - cx);
+    const y0 = (posY - cy);
+    const localX = x0 - (drawW / 2);
+    const localY = y0 - (drawH / 2);
+
+    const drawTheSvg = (ctxLocal) => {
+      ctxLocal.save();
+      // Clip to the active wedge (rotates with the context).
+      ctxLocal.beginPath();
+      ctxLocal.moveTo(0, 0);
+      if (divDeg < 360) {
+        ctxLocal.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, startRad, startRad + divDeg * Math.PI / 180);
+      } else {
+        ctxLocal.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, 0, 2 * Math.PI);
+      }
+      ctxLocal.closePath();
+      ctxLocal.clip();
+
+      if (shapeRot) {
+        // Rotate around the shape center at the pointer location.
+        ctxLocal.translate(x0, y0);
+        ctxLocal.rotate(shapeRot);
+        ctxLocal.translate(-x0, -y0);
+      }
+
+      // Draw the SVG image.
+      ctxLocal.drawImage(imgToDraw, localX, localY, drawW, drawH);
+      ctxLocal.restore();
+    };
+
+    for (let i = 0; i < 360; i += divDeg) {
+      const rad = i * Math.PI / 180;
+
+      targetCtx.save();
+      targetCtx.translate(cx, cy);
+      targetCtx.rotate(rad);
+      drawTheSvg(targetCtx);
+      targetCtx.restore();
+
+      if (mirror) {
+        targetCtx.save();
+        targetCtx.translate(cx, cy);
+        targetCtx.rotate(rad);
+        targetCtx.rotate(startRad);
+        targetCtx.scale(1, -1);
+        targetCtx.rotate(-startRad);
+        drawTheSvg(targetCtx);
+        targetCtx.restore();
+      }
+    }
+  }
 
   // --- Undo/Redo State ---
   let historyStack = [];
@@ -323,9 +699,18 @@ SOFTWARE.
     return parseFloat(val);
   }
 
+  function setDefaultStartAngleFromDivAngle({ redraw = true } = {}) {
+    const divDeg = getDivAngle();
+    const next = -(divDeg / 2);
+    isAutoSettingStartAngle = true;
+    startAngleIn.value = (Math.round(next * 10) / 10).toFixed(1);
+    if (redraw) startAngleIn.dispatchEvent(new Event('input'));
+    isAutoSettingStartAngle = false;
+  }
+
   function initCanvas() {
-    const w = parseInt(widthIn.value) || 600;
-    const h = parseInt(heightIn.value) || 600;
+    const w = parseInt(widthIn.value) || 800;
+    const h = parseInt(heightIn.value) || 800;
 
     drawCanvas.width = uiCanvas.width = w;
     drawCanvas.height = uiCanvas.height = h;
@@ -654,6 +1039,28 @@ SOFTWARE.
     }
 
     const tool = document.querySelector('input[name="tool"]:checked').value;
+
+    if (tool === 'svg') {
+        if (!selectedSvgShapeId) return;
+        ensureSvgShapeLoaded(selectedSvgShapeId)
+          .then(entry => {
+            const scaleFactor = getSvgShapeScaleForPos(x, y, entry.viewBox);
+            const brushPx = Math.max(1, parseInt(brushSizeIn.value) || 1);
+            const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+            return getColoredSvgImage(entry, { strokeWidth })
+              .then(colored => colored.ready.then(() => colored))
+              .then(colored => {
+                // Stamp to the drawing canvas.
+                drawSvgShapeAtPointer(ctx, entry, x, y, colored.img);
+                saveState();
+                drawGuides();
+              });
+          })
+          .catch(() => {
+            // ignore
+          });
+        return;
+    }
     
     if (tool === 'rect' || tool === 'circle') {
         isDrawingShape = true;
@@ -844,6 +1251,30 @@ SOFTWARE.
       currentShapeY = pos.y;
       drawGuides(); // clear uiCanvas and redraw line guides
       drawCurrentShape(uiCtx, shapeStartX, shapeStartY, currentShapeX, currentShapeY); // Render preview
+    } else if (!isDrawing && !isDraggingStart && !isDraggingEnd && getActiveTool() === 'svg') {
+      // Hover preview for SVG shapes.
+      const pos = getMousePos(drawCanvas, e);
+      lastHoverPos = pos;
+      if (!selectedSvgShapeId || !isInsideWedge(pos.x, pos.y)) {
+        drawGuides();
+        return;
+      }
+      drawGuides();
+      ensureSvgShapeLoaded(selectedSvgShapeId)
+        .then(entry => {
+          const scaleFactor = getSvgShapeScaleForPos(pos.x, pos.y, entry.viewBox);
+          const brushPx = Math.max(1, parseInt(brushSizeIn.value) || 1);
+          const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+          return getColoredSvgImage(entry, { strokeWidth })
+            .then(colored => colored.ready.then(() => colored))
+            .then(colored => {
+              // Draw preview on ui canvas.
+              drawSvgShapeAtPointer(uiCtx, entry, pos.x, pos.y, colored.img);
+            });
+        })
+        .catch(() => {
+          // ignore
+        });
     } else if (isDrawing) {
       draw(e);
     } else if (isDraggingStart || isDraggingEnd) {
@@ -946,7 +1377,7 @@ SOFTWARE.
   }
 
   function updateToggleText() {
-    const icon = bottomPanel.classList.contains('closed') ? '▲' : '▼';
+    const icon = bottomPanel.classList.contains('closed') ? '▶' : '◀';
     const zoomPct = Math.round(scale * 100);
     toggleBottom.textContent = `${icon} Tools (${zoomPct}%) ${icon}`;
   }
@@ -1047,9 +1478,12 @@ SOFTWARE.
         const val = e.target.value;
         const isBrush = val === 'brush';
         const isShape = val === 'rect' || val === 'circle';
-        brushSettingsSection.style.display = (isBrush || isShape) ? 'flex' : 'none';
+        const isSvg = val === 'svg';
+        brushSettingsSection.style.display = 'flex';
         fillSettingsSection.style.display = val === 'fill' ? 'flex' : 'none';
-        shapeSettingsSection.style.display = isShape ? 'flex' : 'none';
+        shapeSettingsSection.style.display = (isShape || isSvg) ? 'flex' : 'none';
+        // Shape picker stays available, but opening it is most useful for the svg tool.
+        if (!isSvg) shapesDetails.open = false;
     });
   });
 
@@ -1060,11 +1494,13 @@ SOFTWARE.
   brushDecBtn.addEventListener('click', () => {
     brushSizeIn.value = Math.max(1, parseInt(brushSizeIn.value) - 1);
     brushVal.textContent = brushSizeIn.value;
+    redrawSvgPreviewIfNeeded();
   });
   
   brushIncBtn.addEventListener('click', () => {
     brushSizeIn.value = Math.min(50, parseInt(brushSizeIn.value) + 1);
     brushVal.textContent = brushSizeIn.value;
+    redrawSvgPreviewIfNeeded();
   });
 
   bgColorIn.addEventListener('input', () => {
@@ -1072,13 +1508,66 @@ SOFTWARE.
         drawCanvas.style.backgroundColor = bgColorIn.value;
     }
   });
+
+  const redrawSvgPreviewIfNeeded = () => {
+    if (getActiveTool() !== 'svg') return;
+    if (!lastHoverPos) return;
+    if (!selectedSvgShapeId) {
+      drawGuides();
+      return;
+    }
+    if (!isInsideWedge(lastHoverPos.x, lastHoverPos.y)) {
+      drawGuides();
+      return;
+    }
+    drawGuides();
+    ensureSvgShapeLoaded(selectedSvgShapeId)
+      .then(entry => {
+        const scaleFactor = getSvgShapeScaleForPos(lastHoverPos.x, lastHoverPos.y, entry.viewBox);
+        const brushPx = Math.max(1, parseInt(brushSizeIn.value) || 1);
+        const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+        return getColoredSvgImage(entry, { strokeWidth })
+          .then(colored => colored.ready.then(() => colored))
+          .then(colored => {
+            drawSvgShapeAtPointer(uiCtx, entry, lastHoverPos.x, lastHoverPos.y, colored.img);
+          });
+      })
+      .catch(() => {
+        // ignore
+      });
+  };
+
+  // Keep SVG preview in sync with brush size changes.
+  brushSizeIn.addEventListener('input', redrawSvgPreviewIfNeeded);
+
+  shapeFillColor.addEventListener('input', redrawSvgPreviewIfNeeded);
+  shapeFillTransparent.addEventListener('change', redrawSvgPreviewIfNeeded);
+
+  shapeRotateIn.addEventListener('input', () => {
+    shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
+    shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
+    redrawSvgPreviewIfNeeded();
+  });
   
-  startAngleIn.addEventListener('input', drawGuides);
+  startAngleIn.addEventListener('input', () => {
+    if (!isAutoSettingStartAngle) startAngleUserModified = true;
+    drawGuides();
+  });
   divAngleRadios.forEach(r => r.addEventListener('change', (e) => {
     customDivAngleIn.disabled = (e.target.value !== 'custom');
+    if (!startAngleUserModified) {
+      setDefaultStartAngleFromDivAngle();
+      return;
+    }
     drawGuides();
   }));
-  customDivAngleIn.addEventListener('input', drawGuides);
+  customDivAngleIn.addEventListener('input', () => {
+    if (!startAngleUserModified) {
+      setDefaultStartAngleFromDivAngle();
+      return;
+    }
+    drawGuides();
+  });
 
   const canvasContainer = document.getElementById('canvas-container');
 
@@ -1126,6 +1615,11 @@ SOFTWARE.
     link.click();
   });
 
+  // Initialize default starting angle as half of the currently selected dividing angle.
+  setDefaultStartAngleFromDivAngle({ redraw: false });
+  buildShapeGrid();
+  shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
+  shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
   initCanvas();
 </script>
 </body>
