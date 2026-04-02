@@ -23,988 +23,1002 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -->
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mandala Drawer</title>
-<style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-    background-color: #2b2b2b;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mandala Drawer</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #2b2b2b;
+    }
 
-  #canvas-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-  }
+    #canvas-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
 
-  canvas {
-    position: absolute;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    transform-origin: 0 0;
-  }
+    canvas {
+      position: absolute;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+      transform-origin: 0 0;
+    }
 
-  #draw-canvas {
-    z-index: 4; /* Behind ui-canvas */
-  }
+    #draw-canvas {
+      z-index: 4;
+      /* Behind ui-canvas */
+    }
 
-  #ui-canvas {
-    /* On top so lines are visible and anchors are clickable */
-    z-index: 5;
-    pointer-events: none;
-  }
+    #ui-canvas {
+      /* On top so lines are visible and anchors are clickable */
+      z-index: 5;
+      pointer-events: none;
+    }
 
-  #bg-pattern {
-    position: absolute;
-    transform-origin: 0 0;
-    z-index: 3;
-    display: none;
-  }
+    #bg-pattern {
+      position: absolute;
+      transform-origin: 0 0;
+      z-index: 3;
+      display: none;
+    }
 
-  .transparent-pattern {
-    background-color: #ffffff;
-    background-image: 
-      linear-gradient(45deg, #d3d3d3 25%, transparent 25%), 
-      linear-gradient(-45deg, #d3d3d3 25%, transparent 25%), 
-      linear-gradient(45deg, transparent 75%, #d3d3d3 75%), 
-      linear-gradient(-45deg, transparent 75%, #d3d3d3 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-  }
+    .transparent-pattern {
+      background-color: #ffffff;
+      background-image:
+        linear-gradient(45deg, #d3d3d3 25%, transparent 25%),
+        linear-gradient(-45deg, #d3d3d3 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #d3d3d3 75%),
+        linear-gradient(-45deg, transparent 75%, #d3d3d3 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
 
-  .panel {
-    position: fixed;
-    background: #ffffff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    padding: 15px;
-    z-index: 10;
-  }
-  
-  #bottom-panel {
-    top: 50%;
-    left: 0;
-    bottom: auto;
-    width: min(420px, 92vw);
-    transform: translate(0, -50%);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    transition: transform 0.3s ease;
-    z-index: 20;
-    padding: 0;
-    overflow: visible;
-  }
+    .panel {
+      position: fixed;
+      background: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      z-index: 10;
+    }
 
-  #tools-content {
-    max-height: 92vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 15px;
-    padding-top: 15px;
-    box-sizing: border-box;
-  }
+    #bottom-panel {
+      top: 50%;
+      left: 0;
+      bottom: auto;
+      width: min(420px, 92vw);
+      transform: translate(0, -50%);
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      transition: transform 0.3s ease;
+      z-index: 20;
+      padding: 0;
+      overflow: visible;
+    }
 
-  #bottom-panel.closed {
-    /* Hides the panel but leaves the toggle tab visible */
-    transform: translate(calc(-100% + 35px), -50%);
-  }
+    #tools-content {
+      max-height: 92vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 15px;
+      padding-top: 15px;
+      box-sizing: border-box;
+    }
 
-  .toggle-btn {
-    position: absolute;
-    top: 10px;
-    right: -35px;
-    width: 35px;
-    height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    cursor: pointer;
-    font-weight: bold;
-    background: #e0e0e0;
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    user-select: none;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-  }
+    #bottom-panel.closed {
+      /* Hides the panel but leaves the toggle tab visible */
+      transform: translate(calc(-100% + 35px), -50%);
+    }
 
-  .toggle-btn:hover {
-    background: #d0d0d0;
-  }
+    .toggle-btn {
+      position: absolute;
+      top: 10px;
+      right: -35px;
+      width: 35px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+      background: #e0e0e0;
+      border-top-left-radius: 8px;
+      border-bottom-left-radius: 8px;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      user-select: none;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
 
-  .tool-section {
-    position: relative;
-    margin: 10px 0;
-    padding: 14px 10px 10px 10px;
-    border: 1px solid #e6e6e6;
-    border-radius: 8px;
-  }
+    .toggle-btn:hover {
+      background: #d0d0d0;
+    }
 
-  .tool-section:last-child {
-    margin-bottom: 0;
-  }
-  
-  label {
-    margin-right: 15px;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-  }
+    .tool-section {
+      position: relative;
+      margin: 10px 0;
+      padding: 14px 10px 10px 10px;
+      border: 1px solid #e6e6e6;
+      border-radius: 8px;
+    }
 
-  input[type="number"] {
-    width: 65px;
-  }
-  
-  .flex-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-  }
+    .tool-section:last-child {
+      margin-bottom: 0;
+    }
 
-  .section-title {
-    position: absolute;
-    top: -9px;
-    left: 10px;
-    font-weight: bold;
-    font-size: 12px;
-    line-height: 1;
-    padding: 0 6px;
-    background: #ffffff;
-    border: 1px solid #e6e6e6;
-    border-radius: 6px;
-    margin-right: 0;
-    min-width: auto;
-  }
+    label {
+      margin-right: 15px;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
 
-  details.shape-details {
-    width: 100%;
-  }
+    input[type="number"] {
+      width: 65px;
+    }
 
-  details.shape-details > summary {
-    cursor: pointer;
-    user-select: none;
-    font-weight: bold;
-    padding: 6px 8px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: #f5f5f5;
-    display: inline-block;
-  }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
 
-  .shape-grid {
-    margin-top: 10px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    width: 100%;
-  }
+    .section-title {
+      position: absolute;
+      top: -9px;
+      left: 10px;
+      font-weight: bold;
+      font-size: 12px;
+      line-height: 1;
+      padding: 0 6px;
+      background: #ffffff;
+      border: 1px solid #e6e6e6;
+      border-radius: 6px;
+      margin-right: 0;
+      min-width: auto;
+    }
 
-  .shape-item {
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background: #fff;
-    padding: 6px;
-    cursor: pointer;
-  }
+    details.shape-details {
+      width: 100%;
+    }
 
-  .shape-item.selected {
-    background: #cce5ff;
-    border-color: #3399ff;
-  }
+    details.shape-details>summary {
+      cursor: pointer;
+      user-select: none;
+      font-weight: bold;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #f5f5f5;
+      display: inline-block;
+    }
 
-  .shape-thumb {
-    width: 100%;
-    height: 70px;
-    object-fit: contain;
-    display: block;
-    pointer-events: none;
-  }
+    .shape-grid {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+    }
 
-  #shape-rotate {
-    width: 180px;
-  }
+    .shape-item {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
+      padding: 6px;
+      cursor: pointer;
+    }
 
-  #shape-preview {
-    width: 64px;
-    height: 64px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background: #fff;
-  }
+    .shape-item.selected {
+      background: #cce5ff;
+      border-color: #3399ff;
+    }
 
-  .shape-rotate-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: nowrap;
-  }
+    .shape-thumb {
+      width: 100%;
+      height: 70px;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+    }
 
-  .shape-controls-wrap {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: nowrap;
-  }
+    #shape-preview {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      box-shadow: none;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
+    }
 
-  .shape-controls-wrap label {
-    margin-right: 0;
-  }
-</style>
+    /* Match the rotate value readout to the brush size readout */
+    #brush-val,
+    #shape-rotate-val {
+      display: inline-block;
+      min-width: 2ch;
+      text-align: right;
+      font-size: 14px;
+      font-weight: normal;
+    }
+
+    .shape-rotate-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+
+    .shape-controls-wrap {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: max-content;
+      align-items: center;
+      column-gap: 10px;
+    }
+
+    .shape-controls-wrap label {
+      margin-right: 0;
+    }
+  </style>
 </head>
+
 <body>
 
-<div id="canvas-container">
-  <div id="bg-pattern"></div>
-  <canvas id="draw-canvas"></canvas>
-  <canvas id="ui-canvas"></canvas>
-</div>
+  <div id="canvas-container">
+    <div id="bg-pattern"></div>
+    <canvas id="draw-canvas"></canvas>
+    <canvas id="ui-canvas"></canvas>
+  </div>
 
-<!-- Bottom Tools Popup -->
-<div id="bottom-panel" class="panel closed">
-  <div class="toggle-btn" id="toggle-bottom">▲ Tools (100%) ▲</div>
+  <!-- Bottom Tools Popup -->
+  <div id="bottom-panel" class="panel closed">
+    <div class="toggle-btn" id="toggle-bottom">▲ Tools (100%) ▲</div>
 
-  <div id="tools-content">
-    <div class="flex-row tool-section">
-      <div class="section-title">Canvas Settings</div>
-      <label>Width: <input type="number" id="c-width" value="800"></label>
-      <label>Height: <input type="number" id="c-height" value="800"></label>
-      <label><input type="checkbox" id="c-square" checked> Make mandala square</label>
-      <label><input type="checkbox" id="c-transparent" checked> Transparent</label>
-      <button id="apply-settings">Apply Settings</button>
-      <button id="clear-canvas">Clear Canvas</button>
-      <button id="export-btn">Export Image</button>
-    </div>
+    <div id="tools-content">
+      <div class="flex-row tool-section">
+        <div class="section-title">Canvas Settings</div>
+        <label>Width: <input type="number" id="c-width" value="800"></label>
+        <label>Height: <input type="number" id="c-height" value="800"></label>
+        <label><input type="checkbox" id="c-square" checked> Make mandala square</label>
+        <label><input type="checkbox" id="c-transparent" checked> Transparent</label>
+        <button id="apply-settings">Apply Settings</button>
+        <button id="clear-canvas">Clear Canvas</button>
+        <button id="export-btn">Export Image</button>
+      </div>
 
-    <div class="flex-row tool-section">
-      <div class="section-title">Painting Tool</div>
-      <label><input type="radio" name="tool" value="brush" checked> Brush</label>
-      <label><input type="radio" name="tool" value="fill"> Fill Bucket</label>
-      <label><input type="radio" name="tool" value="rect"> Rectangle</label>
-      <label><input type="radio" name="tool" value="circle"> Circle</label>
-      <label><input type="radio" name="tool" value="svg"> Shapes</label>
-    </div>
+      <div class="flex-row tool-section">
+        <div class="section-title">Painting Tool</div>
+        <label><input type="radio" name="tool" value="brush" checked> Brush</label>
+        <label><input type="radio" name="tool" value="fill"> Fill Bucket</label>
+        <label><input type="radio" name="tool" value="rect"> Rectangle</label>
+        <label><input type="radio" name="tool" value="circle"> Circle</label>
+        <label><input type="radio" name="tool" value="svg"> Shapes</label>
+      </div>
 
-    <div class="flex-row tool-section" id="brush-settings-section">
-      <div class="section-title">Brush Settings</div>
-      <label>Brush Size: <button id="brush-dec">&lt;</button> <input type="range" id="brush-size" min="1" max="50" value="3"> <button id="brush-inc">&gt;</button> <span id="brush-val">3</span>px</label>
-    </div>
+      <div class="flex-row tool-section" id="brush-settings-section">
+        <div class="section-title">Brush Settings</div>
+        <label>Brush Size: <button id="brush-dec">&lt;</button> <input type="range" id="brush-size" min="1" max="50"
+            value="3"> <button id="brush-inc">&gt;</button> <span id="brush-val">3</span>px</label>
+      </div>
 
-    <div class="flex-row tool-section" id="fill-settings-section" style="display: none;">
-      <div class="section-title">Fill Bucket Settings</div>
-      <label>Sensitivity: <input type="range" id="fill-sensitivity" min="0" max="100" value="20"> <span id="fill-sensitivity-val">20</span></label>
-    </div>
+      <div class="flex-row tool-section" id="fill-settings-section" style="display: none;">
+        <div class="section-title">Fill Bucket Settings</div>
+        <label>Sensitivity: <input type="range" id="fill-sensitivity" min="0" max="100" value="20"> <span
+            id="fill-sensitivity-val">20</span></label>
+      </div>
 
-    <div class="flex-row tool-section" id="shape-settings-section" style="display: none;">
-      <div class="section-title">Shape Settings</div>
-      <label>Fill Color: <input type="color" id="shape-fill-color" value="#ffffff"></label>
-      <div class="shape-controls-wrap">
+      <div class="flex-row tool-section" id="shape-settings-section" style="display: none;">
+        <div class="section-title">Shape Settings</div>
+        <label>Fill Color: <input type="color" id="shape-fill-color" value="#ffffff"></label>
         <label><input type="checkbox" id="shape-fill-transparent" checked> Transparent Fill</label>
-        <label>Rotate:
-          <input type="range" id="shape-rotate" min="0" max="360" step="0.1" value="0">
-          <span id="shape-rotate-val">0</span>°
+        <div class="shape-controls-wrap">
+          <label>Rotate:
+            <input type="range" id="shape-rotate" min="0" max="360" step="1" value="0">
+            <span id="shape-rotate-val">0</span>°
+          </label>
+          <canvas id="shape-preview" width="64" height="64" aria-label="Shape rotation preview"></canvas>
+        </div>
+      </div>
+
+      <div class="flex-row tool-section" id="svg-shapes-section">
+        <div class="section-title">Shapes</div>
+        <details class="shape-details" id="shapes-details">
+          <summary>Choose Shape</summary>
+          <div class="shape-grid" id="shape-grid"></div>
+        </details>
+      </div>
+
+      <div class="flex-row tool-section">
+        <div class="section-title">Color Settings</div>
+        <label>Paint Color: <input type="color" id="paint-color" value="#000000"></label>
+        <label>Background Color: <input type="color" id="bg-color" value="#ffffff"></label>
+      </div>
+
+      <div class="flex-row tool-section">
+        <div class="section-title">Dividing Tools</div>
+        <label>Starting Angle: <input type="number" id="start-angle" value="0" min="0" max="360" step="0.1">°</label>
+        <label><input type="checkbox" id="mirror-draw"> Mirror draw</label>
+      </div>
+
+      <div class="flex-row tool-section">
+        <div class="section-title">Dividing Angle</div>
+        <label><input type="radio" name="div-angle" value="10"> 10°</label>
+        <label><input type="radio" name="div-angle" value="15"> 15°</label>
+        <label><input type="radio" name="div-angle" value="20"> 20°</label>
+        <label><input type="radio" name="div-angle" value="30" checked> 30°</label>
+        <label><input type="radio" name="div-angle" value="40"> 40°</label>
+        <label><input type="radio" name="div-angle" value="45"> 45°</label>
+        <label><input type="radio" name="div-angle" value="60"> 60°</label>
+        <label><input type="radio" name="div-angle" value="90"> 90°</label>
+        <label><input type="radio" name="div-angle" value="120"> 120°</label>
+        <label>
+          <input type="radio" name="div-angle" value="custom"> Custom
+          <input type="number" id="custom-div-angle" value="45" min="0.1" max="180" step="0.1" disabled>°
         </label>
-        <canvas id="shape-preview" width="64" height="64" aria-label="Shape rotation preview"></canvas>
+      </div>
+
+      <div class="flex-row tool-section">
+        <div class="section-title">View Controls</div>
+        <button id="zoom-in">Zoom In</button>
+        <button id="zoom-out">Zoom Out</button>
+        <button id="zoom-reset">Reset View</button>
       </div>
     </div>
-
-    <div class="flex-row tool-section" id="svg-shapes-section">
-      <div class="section-title">Shapes</div>
-      <details class="shape-details" id="shapes-details">
-        <summary>Choose Shape</summary>
-        <div class="shape-grid" id="shape-grid"></div>
-      </details>
-    </div>
-
-    <div class="flex-row tool-section">
-      <div class="section-title">Color Settings</div>
-      <label>Paint Color: <input type="color" id="paint-color" value="#000000"></label>
-      <label>Background Color: <input type="color" id="bg-color" value="#ffffff"></label>
-    </div>
-
-    <div class="flex-row tool-section">
-      <div class="section-title">Dividing Tools</div>
-      <label>Starting Angle: <input type="number" id="start-angle" value="0" min="0" max="360" step="0.1">°</label>
-      <label><input type="checkbox" id="mirror-draw"> Mirror draw</label>
-    </div>
-    
-    <div class="flex-row tool-section">
-      <div class="section-title">Dividing Angle</div>
-      <label><input type="radio" name="div-angle" value="10"> 10°</label>
-      <label><input type="radio" name="div-angle" value="15"> 15°</label>
-      <label><input type="radio" name="div-angle" value="20"> 20°</label>
-      <label><input type="radio" name="div-angle" value="30" checked> 30°</label>
-      <label><input type="radio" name="div-angle" value="40"> 40°</label>
-      <label><input type="radio" name="div-angle" value="45"> 45°</label>
-      <label><input type="radio" name="div-angle" value="60"> 60°</label>
-      <label><input type="radio" name="div-angle" value="90"> 90°</label>
-      <label><input type="radio" name="div-angle" value="120"> 120°</label>
-      <label>
-        <input type="radio" name="div-angle" value="custom"> Custom
-        <input type="number" id="custom-div-angle" value="45" min="0.1" max="180" step="0.1" disabled>°
-      </label>
-    </div>
-
-    <div class="flex-row tool-section">
-      <div class="section-title">View Controls</div>
-      <button id="zoom-in">Zoom In</button>
-      <button id="zoom-out">Zoom Out</button>
-      <button id="zoom-reset">Reset View</button>
-    </div>
   </div>
-</div>
 
-<script>
-  const drawCanvas = document.getElementById('draw-canvas');
-  const uiCanvas = document.getElementById('ui-canvas');
-  const ctx = drawCanvas.getContext('2d');
-  const uiCtx = uiCanvas.getContext('2d');
-  
-  const widthIn = document.getElementById('c-width');
-  const heightIn = document.getElementById('c-height');
-  const squareCheck = document.getElementById('c-square');
-  const transparentCheck = document.getElementById('c-transparent');
-  const applyBtn = document.getElementById('apply-settings');
-  const clearBtn = document.getElementById('clear-canvas');
-  const exportBtn = document.getElementById('export-btn');
-  
-  const toggleBottom = document.getElementById('toggle-bottom');
-  const bottomPanel = document.getElementById('bottom-panel');
-  const toolRadios = document.querySelectorAll('input[name="tool"]');
-  const brushSettingsSection = document.getElementById('brush-settings-section');
-  const fillSettingsSection = document.getElementById('fill-settings-section');
-  const brushSizeIn = document.getElementById('brush-size');
-  const brushVal = document.getElementById('brush-val');
-  const brushDecBtn = document.getElementById('brush-dec');
-  const brushIncBtn = document.getElementById('brush-inc');
-  const fillSensitivityIn = document.getElementById('fill-sensitivity');
-  const fillSensitivityVal = document.getElementById('fill-sensitivity-val');
-  const paintColorIn = document.getElementById('paint-color');
-  const bgColorIn = document.getElementById('bg-color');
-  const shapeSettingsSection = document.getElementById('shape-settings-section');
-  const shapeFillColor = document.getElementById('shape-fill-color');
-  const shapeFillTransparent = document.getElementById('shape-fill-transparent');
-  const shapePreviewCanvas = document.getElementById('shape-preview');
-  const shapePreviewCtx = shapePreviewCanvas.getContext('2d');
+  <script>
+    const drawCanvas = document.getElementById('draw-canvas');
+    const uiCanvas = document.getElementById('ui-canvas');
+    const ctx = drawCanvas.getContext('2d');
+    const uiCtx = uiCanvas.getContext('2d');
 
-  const svgShapesSection = document.getElementById('svg-shapes-section');
-  const shapesDetails = document.getElementById('shapes-details');
-  const shapeGrid = document.getElementById('shape-grid');
-  const shapeRotateIn = document.getElementById('shape-rotate');
-  const shapeRotateVal = document.getElementById('shape-rotate-val');
-  
-  const startAngleIn = document.getElementById('start-angle');
-  const mirrorDrawCheck = document.getElementById('mirror-draw');
-  const divAngleRadios = document.querySelectorAll('input[name="div-angle"]');
-  const customDivAngleIn = document.getElementById('custom-div-angle');
+    const widthIn = document.getElementById('c-width');
+    const heightIn = document.getElementById('c-height');
+    const squareCheck = document.getElementById('c-square');
+    const transparentCheck = document.getElementById('c-transparent');
+    const applyBtn = document.getElementById('apply-settings');
+    const clearBtn = document.getElementById('clear-canvas');
+    const exportBtn = document.getElementById('export-btn');
 
-  // Starting angle defaults to half of the dividing angle until the user changes it.
-  let startAngleUserModified = false;
-  let isAutoSettingStartAngle = false;
+    const toggleBottom = document.getElementById('toggle-bottom');
+    const bottomPanel = document.getElementById('bottom-panel');
+    const toolRadios = document.querySelectorAll('input[name="tool"]');
+    const brushSettingsSection = document.getElementById('brush-settings-section');
+    const fillSettingsSection = document.getElementById('fill-settings-section');
+    const brushSizeIn = document.getElementById('brush-size');
+    const brushVal = document.getElementById('brush-val');
+    const brushDecBtn = document.getElementById('brush-dec');
+    const brushIncBtn = document.getElementById('brush-inc');
+    const fillSensitivityIn = document.getElementById('fill-sensitivity');
+    const fillSensitivityVal = document.getElementById('fill-sensitivity-val');
+    const paintColorIn = document.getElementById('paint-color');
+    const bgColorIn = document.getElementById('bg-color');
+    const shapeSettingsSection = document.getElementById('shape-settings-section');
+    const shapeFillColor = document.getElementById('shape-fill-color');
+    const shapeFillTransparent = document.getElementById('shape-fill-transparent');
+    const shapePreviewCanvas = document.getElementById('shape-preview');
+    const shapePreviewCtx = shapePreviewCanvas.getContext('2d');
 
-  const bgPattern = document.getElementById('bg-pattern');
-  const zoomInBtn = document.getElementById('zoom-in');
-  const zoomOutBtn = document.getElementById('zoom-out');
-  const zoomResetBtn = document.getElementById('zoom-reset');
+    const svgShapesSection = document.getElementById('svg-shapes-section');
+    const shapesDetails = document.getElementById('shapes-details');
+    const shapeGrid = document.getElementById('shape-grid');
+    const shapeRotateIn = document.getElementById('shape-rotate');
+    const shapeRotateVal = document.getElementById('shape-rotate-val');
 
-  let isDrawing = false;
-  let lastX = 0;
-  let lastY = 0;
-  
-  const ANCHOR_RADIUS = 10;
-  let startAnchorPos = { x: 0, y: 0 };
-  let endAnchorPos = { x: 0, y: 0 };
-  let isDraggingStart = false;
-  let isDraggingEnd = false;
-  
-  let isDrawingShape = false;
-  let shapeStartX = 0;
-  let shapeStartY = 0;
-  let currentShapeX = 0;
-  let currentShapeY = 0;
+    const startAngleIn = document.getElementById('start-angle');
+    const mirrorDrawCheck = document.getElementById('mirror-draw');
+    const divAngleRadios = document.querySelectorAll('input[name="div-angle"]');
+    const customDivAngleIn = document.getElementById('custom-div-angle');
 
-  let isDrawingSvgShape = false;
-  let svgStartX = 0;
-  let svgStartY = 0;
-  let svgCurrentX = 0;
-  let svgCurrentY = 0;
+    // Starting angle defaults to half of the dividing angle until the user changes it.
+    let startAngleUserModified = false;
+    let isAutoSettingStartAngle = false;
 
-  // --- SVG Shape Tool State ---
-  const SHAPES_MAX = 24;
-  let selectedSvgShapeId = null; // "01".."64"
-  const svgShapeCache = new Map();
-  let lastHoverPos = null; // {x,y} in canvas coords
+    const bgPattern = document.getElementById('bg-pattern');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomResetBtn = document.getElementById('zoom-reset');
 
-  let shapeRotateDeg = 0;
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
 
-  let svgStaticScaleFactor = 0;
+    const ANCHOR_RADIUS = 10;
+    let startAnchorPos = { x: 0, y: 0 };
+    let endAnchorPos = { x: 0, y: 0 };
+    let isDraggingStart = false;
+    let isDraggingEnd = false;
 
-  function getBrushPx() {
-    return Math.max(1, parseInt(brushSizeIn.value) || 1);
-  }
+    let isDrawingShape = false;
+    let shapeStartX = 0;
+    let shapeStartY = 0;
+    let currentShapeX = 0;
+    let currentShapeY = 0;
 
-  function getShapeRotateRad() {
-    const d = (shapeRotateDeg % 360 + 360) % 360;
-    return d * Math.PI / 180;
-  }
+    let isDrawingSvgShape = false;
+    let svgStartX = 0;
+    let svgStartY = 0;
+    let svgCurrentX = 0;
+    let svgCurrentY = 0;
 
-  function redrawShapeWidget() {
-    const tool = getActiveTool();
+    // --- SVG Shape Tool State ---
+    const SHAPES_MAX = 24;
+    let selectedSvgShapeId = null; // "01".."64"
+    const svgShapeCache = new Map();
+    let lastHoverPos = null; // {x,y} in canvas coords
 
-    // Only show meaningful preview for rect/svg.
-    if (tool !== 'rect' && tool !== 'svg') {
-      shapePreviewCtx.clearRect(0, 0, shapePreviewCanvas.width, shapePreviewCanvas.height);
-      return;
+    let shapeRotateDeg = 0;
+
+    let svgStaticScaleFactor = 0;
+
+    function getBrushPx() {
+      return Math.max(1, parseInt(brushSizeIn.value) || 1);
     }
 
-    const w = shapePreviewCanvas.width;
-    const h = shapePreviewCanvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const rot = getShapeRotateRad();
-
-    shapePreviewCtx.clearRect(0, 0, w, h);
-
-    if (tool === 'rect') {
-      const strokeColor = paintColorIn.value;
-      const isTransparent = shapeFillTransparent.checked;
-      const fillColor = shapeFillColor.value;
-
-      const baseLineWidth = Math.max(1, Math.min(10, Math.round(getBrushPx() / 2)));
-      const rectW = w * 0.55;
-      const rectH = h * 0.35;
-
-      shapePreviewCtx.save();
-      shapePreviewCtx.translate(cx, cy);
-      if (rot) shapePreviewCtx.rotate(rot);
-
-      shapePreviewCtx.lineWidth = baseLineWidth;
-      shapePreviewCtx.strokeStyle = strokeColor;
-      shapePreviewCtx.fillStyle = fillColor;
-
-      shapePreviewCtx.beginPath();
-      shapePreviewCtx.rect(-rectW / 2, -rectH / 2, rectW, rectH);
-      if (!isTransparent) shapePreviewCtx.fill();
-      shapePreviewCtx.stroke();
-      shapePreviewCtx.restore();
-      return;
+    function getShapeRotateRad() {
+      const d = (shapeRotateDeg % 360 + 360) % 360;
+      return d * Math.PI / 180;
     }
 
-    // SVG preview
-    if (!selectedSvgShapeId) return;
-    ensureSvgShapeLoaded(selectedSvgShapeId)
-      .then(entry => {
-        // Fit SVG into widget bounds.
-        const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height) || 1;
-        const maxSize = Math.min(w, h) * 0.72;
-        const scaleFactor = maxSize / maxDim;
+    function redrawShapeWidget() {
+      const tool = getActiveTool();
 
-        const strokePxInWidget = Math.max(1, Math.min(8, Math.round(getBrushPx() / 3)));
-        const strokeWidth = scaleFactor > 0 ? (strokePxInWidget / scaleFactor) : strokePxInWidget;
-
-        return getColoredSvgImage(entry, { strokeWidth })
-          .then(colored => colored.ready.then(() => colored))
-          .then(colored => {
-            shapePreviewCtx.save();
-            shapePreviewCtx.translate(cx, cy);
-            if (rot) shapePreviewCtx.rotate(rot);
-            shapePreviewCtx.drawImage(colored.img, -maxSize / 2, -maxSize / 2, maxSize, maxSize);
-            shapePreviewCtx.restore();
-          });
-      })
-      .catch(() => {
-        // ignore
-      });
-  }
-
-  function getActiveTool() {
-    const checked = document.querySelector('input[name="tool"]:checked');
-    return checked ? checked.value : 'brush';
-  }
-
-  function getShapeUrlById(id) {
-    return `Shapes/PARTS-${id}.svg`;
-  }
-
-  function computeSvgStaticScaleFactor(viewBox) {
-    const divDeg = getDivAngle();
-    if (divDeg <= 0) return 0;
-
-    // Compute chord width at the "middle" radius of the wedge.
-    const w = drawCanvas.width;
-    const h = drawCanvas.height;
-    if (!w || !h) return 0;
-
-    const cx = w / 2;
-    const cy = h / 2;
-    const guideRadius = Math.min(cx, cy) - ANCHOR_RADIUS - 5;
-    const midR = Math.max(1, guideRadius / 2);
-    const halfRad = (divDeg * Math.PI / 180) / 2;
-    const chord = 2 * midR * Math.sin(halfRad);
-
-    const maxDim = Math.max(viewBox.width, viewBox.height);
-    if (maxDim <= 0) return 0;
-
-    // Leave a small margin relative to brush size so the outline doesn't cross the guides.
-    const margin = Math.max(2, getBrushPx());
-    const maxSize = Math.max(0, (chord - margin) * 0.9);
-    if (maxSize <= 0.5) return 0;
-
-    return maxSize / maxDim;
-  }
-
-  function updateSvgStaticScaleIfPossible() {
-    if (!selectedSvgShapeId) return;
-    const entry = svgShapeCache.get(selectedSvgShapeId);
-    if (!entry) return;
-    svgStaticScaleFactor = computeSvgStaticScaleFactor(entry.viewBox);
-  }
-
-  function parseViewBox(svgText) {
-    const m = /viewBox\s*=\s*"\s*([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)\s*"/i.exec(svgText);
-    if (!m) return { x: 0, y: 0, width: 100, height: 100 };
-    const width = parseFloat(m[3]);
-    const height = parseFloat(m[4]);
-    return {
-      x: parseFloat(m[1]) || 0,
-      y: parseFloat(m[2]) || 0,
-      width: Number.isFinite(width) && width > 0 ? width : 100,
-      height: Number.isFinite(height) && height > 0 ? height : 100,
-    };
-  }
-
-  async function ensureSvgShapeLoaded(id) {
-    if (svgShapeCache.has(id)) return svgShapeCache.get(id);
-
-    const url = getShapeUrlById(id);
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = url;
-
-    const ready = new Promise((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error(`Failed to load ${url}`));
-    });
-
-    const entry = {
-      id,
-      url,
-      img,
-      svgText: null,
-      viewBox: { x: 0, y: 0, width: 100, height: 100 },
-      ready,
-      coloredImages: new Map(), // key -> { img, ready, objectUrl }
-    };
-    svgShapeCache.set(id, entry);
-
-    // Best-effort parse viewBox for sizing.
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        const text = await resp.text();
-        entry.svgText = text;
-        entry.viewBox = parseViewBox(text);
-      }
-    } catch {
-      // ignore
-    }
-    return entry;
-  }
-
-  function getCurrentShapeFill() {
-    return {
-      color: shapeFillColor.value,
-      transparent: shapeFillTransparent.checked,
-    };
-  }
-
-  function recolorSvgText(svgText, { color, transparent }, { strokeWidth } = {}) {
-    try {
-      const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
-      // If parsing fails, fall back to the original.
-      if (doc.querySelector('parsererror')) return svgText;
-
-      const fillValue = transparent ? 'none' : color;
-      doc.querySelectorAll('[fill]').forEach(el => {
-        const v = (el.getAttribute('fill') || '').trim().toLowerCase();
-        if (!v || v === 'none') return;
-        el.setAttribute('fill', fillValue);
-      });
-
-      if (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0) {
-        const strokeWidthStr = String(strokeWidth);
-        doc.querySelectorAll('[stroke]').forEach(el => {
-          const v = (el.getAttribute('stroke') || '').trim().toLowerCase();
-          if (!v || v === 'none') return;
-          el.setAttribute('stroke-width', strokeWidthStr);
-        });
-        // Best-effort: also update existing stroke-width attributes.
-        doc.querySelectorAll('[stroke-width]').forEach(el => {
-          el.setAttribute('stroke-width', strokeWidthStr);
-        });
+      // Only show meaningful preview for rect/svg.
+      if (tool !== 'rect' && tool !== 'svg') {
+        shapePreviewCtx.clearRect(0, 0, shapePreviewCanvas.width, shapePreviewCanvas.height);
+        return;
       }
 
-      // Also handle inline style="fill:..." cases (best-effort).
-      doc.querySelectorAll('[style]').forEach(el => {
-        const style = el.getAttribute('style');
-        if (!style) return;
-        let nextStyle = style;
-        if (/fill\s*:/i.test(nextStyle)) {
-          nextStyle = nextStyle.replace(/fill\s*:\s*[^;]+/ig, `fill:${fillValue}`);
-        }
-        if (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0) {
-          if (/stroke-width\s*:/i.test(nextStyle)) {
-            nextStyle = nextStyle.replace(/stroke-width\s*:\s*[^;]+/ig, `stroke-width:${strokeWidth}`);
-          }
-        }
-        el.setAttribute('style', nextStyle);
-      });
+      const w = shapePreviewCanvas.width;
+      const h = shapePreviewCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const rot = getShapeRotateRad();
 
-      return new XMLSerializer().serializeToString(doc);
-    } catch {
-      return svgText;
-    }
-  }
+      shapePreviewCtx.clearRect(0, 0, w, h);
 
-  async function getColoredSvgImage(entry, { strokeWidth } = {}) {
-    const settings = getCurrentShapeFill();
-    const strokeKey = (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0)
-      ? `|sw:${Math.round(strokeWidth * 100) / 100}`
-      : '';
-    const cacheKey = `${settings.transparent ? 't' : 'c'}|${settings.color}${strokeKey}`;
-    const existing = entry.coloredImages.get(cacheKey);
-    if (existing) return existing;
+      if (tool === 'rect') {
+        const strokeColor = paintColorIn.value;
+        const isTransparent = shapeFillTransparent.checked;
+        const fillColor = shapeFillColor.value;
 
-    const svgText = entry.svgText;
-    if (!svgText) {
-      // If we couldn't fetch/parse the SVG text, fall back to the raw image.
-      return { img: entry.img, ready: entry.ready, objectUrl: null };
-    }
+        const baseLineWidth = Math.max(1, Math.min(10, Math.round(getBrushPx() / 2)));
+        const rectW = w * 0.55;
+        const rectH = h * 0.35;
 
-    const coloredText = recolorSvgText(svgText, settings, { strokeWidth });
-    const blob = new Blob([coloredText], { type: 'image/svg+xml' });
-    const objectUrl = URL.createObjectURL(blob);
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = objectUrl;
-    const ready = new Promise((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Failed to load recolored SVG'));
-    });
+        shapePreviewCtx.save();
+        shapePreviewCtx.translate(cx, cy);
+        if (rot) shapePreviewCtx.rotate(rot);
 
-    const created = { img, ready, objectUrl };
-    entry.coloredImages.set(cacheKey, created);
-    return created;
-  }
+        shapePreviewCtx.lineWidth = baseLineWidth;
+        shapePreviewCtx.strokeStyle = strokeColor;
+        shapePreviewCtx.fillStyle = fillColor;
 
-  function setSelectedSvgShape(id) {
-    selectedSvgShapeId = id;
-    Array.from(shapeGrid.querySelectorAll('.shape-item')).forEach(btn => {
-      btn.classList.toggle('selected', btn.dataset.shapeId === id);
-    });
+        shapePreviewCtx.beginPath();
+        shapePreviewCtx.rect(-rectW / 2, -rectH / 2, rectW, rectH);
+        if (!isTransparent) shapePreviewCtx.fill();
+        shapePreviewCtx.stroke();
+        shapePreviewCtx.restore();
+        return;
+      }
 
-    // Selecting a shape implies using the Shapes tool.
-    const svgToolRadio = document.querySelector('input[name="tool"][value="svg"]');
-    if (svgToolRadio && !svgToolRadio.checked) {
-      svgToolRadio.checked = true;
-      svgToolRadio.dispatchEvent(new Event('change'));
+      // SVG preview
+      if (!selectedSvgShapeId) return;
+      ensureSvgShapeLoaded(selectedSvgShapeId)
+        .then(entry => {
+          // Fit SVG into widget bounds.
+          const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height) || 1;
+          const maxSize = Math.min(w, h) * 0.72;
+          const scaleFactor = maxSize / maxDim;
+
+          const strokePxInWidget = Math.max(1, Math.min(8, Math.round(getBrushPx() / 3)));
+          const strokeWidth = scaleFactor > 0 ? (strokePxInWidget / scaleFactor) : strokePxInWidget;
+
+          return getColoredSvgImage(entry, { strokeWidth })
+            .then(colored => colored.ready.then(() => colored))
+            .then(colored => {
+              shapePreviewCtx.save();
+              shapePreviewCtx.translate(cx, cy);
+              if (rot) shapePreviewCtx.rotate(rot);
+              shapePreviewCtx.drawImage(colored.img, -maxSize / 2, -maxSize / 2, maxSize, maxSize);
+              shapePreviewCtx.restore();
+            });
+        })
+        .catch(() => {
+          // ignore
+        });
     }
 
-    ensureSvgShapeLoaded(id)
-      .then(entry => {
-        svgStaticScaleFactor = computeSvgStaticScaleFactor(entry.viewBox);
-        redrawSvgPreviewIfNeeded();
-        redrawShapeWidget();
-      })
-      .catch(() => {
-        // ignore
-      });
-  }
+    function getActiveTool() {
+      const checked = document.querySelector('input[name="tool"]:checked');
+      return checked ? checked.value : 'brush';
+    }
 
-  function buildShapeGrid() {
-    shapeGrid.innerHTML = '';
-    for (let i = 1; i <= SHAPES_MAX; i++) {
-      const id = String(i).padStart(2, '0');
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'shape-item';
-      btn.dataset.shapeId = id;
+    function getShapeUrlById(id) {
+      return `Shapes/PARTS-${id}.svg`;
+    }
 
-      const img = document.createElement('img');
-      img.className = 'shape-thumb';
-      img.alt = `Shape ${id}`;
-      img.src = getShapeUrlById(id);
-      img.onerror = () => {
-        // If the SVG doesn't exist, remove it from the grid.
-        btn.remove();
-        if (selectedSvgShapeId === id) selectedSvgShapeId = null;
+    function computeSvgStaticScaleFactor(viewBox) {
+      const divDeg = getDivAngle();
+      if (divDeg <= 0) return 0;
+
+      // Compute chord width at the "middle" radius of the wedge.
+      const w = drawCanvas.width;
+      const h = drawCanvas.height;
+      if (!w || !h) return 0;
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const guideRadius = Math.min(cx, cy) - ANCHOR_RADIUS - 5;
+      const midR = Math.max(1, guideRadius / 2);
+      const halfRad = (divDeg * Math.PI / 180) / 2;
+      const chord = 2 * midR * Math.sin(halfRad);
+
+      const maxDim = Math.max(viewBox.width, viewBox.height);
+      if (maxDim <= 0) return 0;
+
+      // Leave a small margin relative to brush size so the outline doesn't cross the guides.
+      const margin = Math.max(2, getBrushPx());
+      const maxSize = Math.max(0, (chord - margin) * 0.9);
+      if (maxSize <= 0.5) return 0;
+
+      return maxSize / maxDim;
+    }
+
+    function updateSvgStaticScaleIfPossible() {
+      if (!selectedSvgShapeId) return;
+      const entry = svgShapeCache.get(selectedSvgShapeId);
+      if (!entry) return;
+      svgStaticScaleFactor = computeSvgStaticScaleFactor(entry.viewBox);
+    }
+
+    function parseViewBox(svgText) {
+      const m = /viewBox\s*=\s*"\s*([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)\s*"/i.exec(svgText);
+      if (!m) return { x: 0, y: 0, width: 100, height: 100 };
+      const width = parseFloat(m[3]);
+      const height = parseFloat(m[4]);
+      return {
+        x: parseFloat(m[1]) || 0,
+        y: parseFloat(m[2]) || 0,
+        width: Number.isFinite(width) && width > 0 ? width : 100,
+        height: Number.isFinite(height) && height > 0 ? height : 100,
       };
-      btn.appendChild(img);
-
-      btn.addEventListener('click', () => setSelectedSvgShape(id));
-
-      shapeGrid.appendChild(btn);
     }
-  }
 
-  function getSvgShapeScaleForPos(posX, posY, viewBox) {
-    const cx = drawCanvas.width / 2;
-    const cy = drawCanvas.height / 2;
-    const dx = posX - cx;
-    const dy = posY - cy;
-    const r = Math.sqrt(dx * dx + dy * dy);
-    const divDeg = getDivAngle();
-    const halfRad = (divDeg * Math.PI / 180) / 2;
-    const chord = 2 * r * Math.sin(halfRad);
-    const margin = Math.max(2, parseInt(brushSizeIn.value) || 0);
-    const maxSize = Math.max(0, (chord - margin) * 0.9);
+    async function ensureSvgShapeLoaded(id) {
+      if (svgShapeCache.has(id)) return svgShapeCache.get(id);
 
-    const maxDim = Math.max(viewBox.width, viewBox.height);
-    if (maxDim <= 0 || maxSize <= 0.5) return 0;
-    return maxSize / maxDim;
-  }
+      const url = getShapeUrlById(id);
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
 
-  function drawSvgShapeAtPointer(targetCtx, shapeEntry, posX, posY, imgToDraw, { scaleFactorOverride } = {}) {
-    const tool = getActiveTool();
-    if (tool !== 'svg') return;
-    if (!shapeEntry || !imgToDraw) return;
+      const ready = new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error(`Failed to load ${url}`));
+      });
 
-    const mirror = mirrorDrawCheck.checked;
-    const divDeg = getDivAngle();
-    const cx = drawCanvas.width / 2;
-    const cy = drawCanvas.height / 2;
-    const startRad = (getStartAngle() - 90) * Math.PI / 180;
-    const shapeRot = getShapeRotateRad();
+      const entry = {
+        id,
+        url,
+        img,
+        svgText: null,
+        viewBox: { x: 0, y: 0, width: 100, height: 100 },
+        ready,
+        coloredImages: new Map(), // key -> { img, ready, objectUrl }
+      };
+      svgShapeCache.set(id, entry);
 
-    const scaleFactor = (typeof scaleFactorOverride === 'number' && Number.isFinite(scaleFactorOverride) && scaleFactorOverride > 0)
-      ? scaleFactorOverride
-      : (svgStaticScaleFactor || getSvgShapeScaleForPos(posX, posY, shapeEntry.viewBox));
-    if (!scaleFactor) return;
-
-    const drawW = shapeEntry.viewBox.width * scaleFactor;
-    const drawH = shapeEntry.viewBox.height * scaleFactor;
-
-    const x0 = (posX - cx);
-    const y0 = (posY - cy);
-    const localX = x0 - (drawW / 2);
-    const localY = y0 - (drawH / 2);
-
-    const drawTheSvg = (ctxLocal) => {
-      ctxLocal.save();
-      // Clip to the active wedge (rotates with the context).
-      ctxLocal.beginPath();
-      ctxLocal.moveTo(0, 0);
-      if (divDeg < 360) {
-        ctxLocal.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, startRad, startRad + divDeg * Math.PI / 180);
-      } else {
-        ctxLocal.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, 0, 2 * Math.PI);
+      // Best-effort parse viewBox for sizing.
+      try {
+        const resp = await fetch(url);
+        if (resp.ok) {
+          const text = await resp.text();
+          entry.svgText = text;
+          entry.viewBox = parseViewBox(text);
+        }
+      } catch {
+        // ignore
       }
-      ctxLocal.closePath();
-      ctxLocal.clip();
+      return entry;
+    }
 
-      if (shapeRot) {
-        // Rotate around the shape center at the pointer location.
-        ctxLocal.translate(x0, y0);
-        ctxLocal.rotate(shapeRot);
-        ctxLocal.translate(-x0, -y0);
+    function getCurrentShapeFill() {
+      return {
+        color: shapeFillColor.value,
+        transparent: shapeFillTransparent.checked,
+      };
+    }
+
+    function recolorSvgText(svgText, { color, transparent }, { strokeWidth } = {}) {
+      try {
+        const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+        // If parsing fails, fall back to the original.
+        if (doc.querySelector('parsererror')) return svgText;
+
+        const fillValue = transparent ? 'none' : color;
+        doc.querySelectorAll('[fill]').forEach(el => {
+          const v = (el.getAttribute('fill') || '').trim().toLowerCase();
+          if (!v || v === 'none') return;
+          el.setAttribute('fill', fillValue);
+        });
+
+        if (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0) {
+          const strokeWidthStr = String(strokeWidth);
+          doc.querySelectorAll('[stroke]').forEach(el => {
+            const v = (el.getAttribute('stroke') || '').trim().toLowerCase();
+            if (!v || v === 'none') return;
+            el.setAttribute('stroke-width', strokeWidthStr);
+          });
+          // Best-effort: also update existing stroke-width attributes.
+          doc.querySelectorAll('[stroke-width]').forEach(el => {
+            el.setAttribute('stroke-width', strokeWidthStr);
+          });
+        }
+
+        // Also handle inline style="fill:..." cases (best-effort).
+        doc.querySelectorAll('[style]').forEach(el => {
+          const style = el.getAttribute('style');
+          if (!style) return;
+          let nextStyle = style;
+          if (/fill\s*:/i.test(nextStyle)) {
+            nextStyle = nextStyle.replace(/fill\s*:\s*[^;]+/ig, `fill:${fillValue}`);
+          }
+          if (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0) {
+            if (/stroke-width\s*:/i.test(nextStyle)) {
+              nextStyle = nextStyle.replace(/stroke-width\s*:\s*[^;]+/ig, `stroke-width:${strokeWidth}`);
+            }
+          }
+          el.setAttribute('style', nextStyle);
+        });
+
+        return new XMLSerializer().serializeToString(doc);
+      } catch {
+        return svgText;
+      }
+    }
+
+    async function getColoredSvgImage(entry, { strokeWidth } = {}) {
+      const settings = getCurrentShapeFill();
+      const strokeKey = (typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0)
+        ? `|sw:${Math.round(strokeWidth * 100) / 100}`
+        : '';
+      const cacheKey = `${settings.transparent ? 't' : 'c'}|${settings.color}${strokeKey}`;
+      const existing = entry.coloredImages.get(cacheKey);
+      if (existing) return existing;
+
+      const svgText = entry.svgText;
+      if (!svgText) {
+        // If we couldn't fetch/parse the SVG text, fall back to the raw image.
+        return { img: entry.img, ready: entry.ready, objectUrl: null };
       }
 
-      // Draw the SVG image.
-      ctxLocal.drawImage(imgToDraw, localX, localY, drawW, drawH);
-      ctxLocal.restore();
-    };
+      const coloredText = recolorSvgText(svgText, settings, { strokeWidth });
+      const blob = new Blob([coloredText], { type: 'image/svg+xml' });
+      const objectUrl = URL.createObjectURL(blob);
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = objectUrl;
+      const ready = new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load recolored SVG'));
+      });
 
-    for (let i = 0; i < 360; i += divDeg) {
-      const rad = i * Math.PI / 180;
+      const created = { img, ready, objectUrl };
+      entry.coloredImages.set(cacheKey, created);
+      return created;
+    }
 
-      targetCtx.save();
-      targetCtx.translate(cx, cy);
-      targetCtx.rotate(rad);
-      drawTheSvg(targetCtx);
-      targetCtx.restore();
+    function setSelectedSvgShape(id) {
+      selectedSvgShapeId = id;
+      Array.from(shapeGrid.querySelectorAll('.shape-item')).forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.shapeId === id);
+      });
 
-      if (mirror) {
+      // Selecting a shape implies using the Shapes tool.
+      const svgToolRadio = document.querySelector('input[name="tool"][value="svg"]');
+      if (svgToolRadio && !svgToolRadio.checked) {
+        svgToolRadio.checked = true;
+        svgToolRadio.dispatchEvent(new Event('change'));
+      }
+
+      ensureSvgShapeLoaded(id)
+        .then(entry => {
+          svgStaticScaleFactor = computeSvgStaticScaleFactor(entry.viewBox);
+          redrawSvgPreviewIfNeeded();
+          redrawShapeWidget();
+        })
+        .catch(() => {
+          // ignore
+        });
+    }
+
+    function buildShapeGrid() {
+      shapeGrid.innerHTML = '';
+      for (let i = 1; i <= SHAPES_MAX; i++) {
+        const id = String(i).padStart(2, '0');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'shape-item';
+        btn.dataset.shapeId = id;
+
+        const img = document.createElement('img');
+        img.className = 'shape-thumb';
+        img.alt = `Shape ${id}`;
+        img.src = getShapeUrlById(id);
+        img.onerror = () => {
+          // If the SVG doesn't exist, remove it from the grid.
+          btn.remove();
+          if (selectedSvgShapeId === id) selectedSvgShapeId = null;
+        };
+        btn.appendChild(img);
+
+        btn.addEventListener('click', () => setSelectedSvgShape(id));
+
+        shapeGrid.appendChild(btn);
+      }
+    }
+
+    function getSvgShapeScaleForPos(posX, posY, viewBox) {
+      const cx = drawCanvas.width / 2;
+      const cy = drawCanvas.height / 2;
+      const dx = posX - cx;
+      const dy = posY - cy;
+      const r = Math.sqrt(dx * dx + dy * dy);
+      const divDeg = getDivAngle();
+      const halfRad = (divDeg * Math.PI / 180) / 2;
+      const chord = 2 * r * Math.sin(halfRad);
+      const margin = Math.max(2, parseInt(brushSizeIn.value) || 0);
+      const maxSize = Math.max(0, (chord - margin) * 0.9);
+
+      const maxDim = Math.max(viewBox.width, viewBox.height);
+      if (maxDim <= 0 || maxSize <= 0.5) return 0;
+      return maxSize / maxDim;
+    }
+
+    function drawSvgShapeAtPointer(targetCtx, shapeEntry, posX, posY, imgToDraw, { scaleFactorOverride } = {}) {
+      const tool = getActiveTool();
+      if (tool !== 'svg') return;
+      if (!shapeEntry || !imgToDraw) return;
+
+      const mirror = mirrorDrawCheck.checked;
+      const divDeg = getDivAngle();
+      const cx = drawCanvas.width / 2;
+      const cy = drawCanvas.height / 2;
+      const startRad = (getStartAngle() - 90) * Math.PI / 180;
+      const shapeRot = getShapeRotateRad();
+
+      const scaleFactor = (typeof scaleFactorOverride === 'number' && Number.isFinite(scaleFactorOverride) && scaleFactorOverride > 0)
+        ? scaleFactorOverride
+        : (svgStaticScaleFactor || getSvgShapeScaleForPos(posX, posY, shapeEntry.viewBox));
+      if (!scaleFactor) return;
+
+      const drawW = shapeEntry.viewBox.width * scaleFactor;
+      const drawH = shapeEntry.viewBox.height * scaleFactor;
+
+      const x0 = (posX - cx);
+      const y0 = (posY - cy);
+      const localX = x0 - (drawW / 2);
+      const localY = y0 - (drawH / 2);
+
+      const drawTheSvg = (ctxLocal) => {
+        ctxLocal.save();
+        // Clip to the active wedge (rotates with the context).
+        ctxLocal.beginPath();
+        ctxLocal.moveTo(0, 0);
+        if (divDeg < 360) {
+          ctxLocal.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, startRad, startRad + divDeg * Math.PI / 180);
+        } else {
+          ctxLocal.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, 0, 2 * Math.PI);
+        }
+        ctxLocal.closePath();
+        ctxLocal.clip();
+
+        if (shapeRot) {
+          // Rotate around the shape center at the pointer location.
+          ctxLocal.translate(x0, y0);
+          ctxLocal.rotate(shapeRot);
+          ctxLocal.translate(-x0, -y0);
+        }
+
+        // Draw the SVG image.
+        ctxLocal.drawImage(imgToDraw, localX, localY, drawW, drawH);
+        ctxLocal.restore();
+      };
+
+      for (let i = 0; i < 360; i += divDeg) {
+        const rad = i * Math.PI / 180;
+
         targetCtx.save();
         targetCtx.translate(cx, cy);
         targetCtx.rotate(rad);
-        targetCtx.rotate(startRad);
-        targetCtx.scale(1, -1);
-        targetCtx.rotate(-startRad);
         drawTheSvg(targetCtx);
         targetCtx.restore();
+
+        if (mirror) {
+          targetCtx.save();
+          targetCtx.translate(cx, cy);
+          targetCtx.rotate(rad);
+          targetCtx.rotate(startRad);
+          targetCtx.scale(1, -1);
+          targetCtx.rotate(-startRad);
+          drawTheSvg(targetCtx);
+          targetCtx.restore();
+        }
       }
     }
-  }
 
-  // --- Undo/Redo State ---
-  let historyStack = [];
-  let historyIndex = -1;
-  const MAX_HISTORY = 10;
+    // --- Undo/Redo State ---
+    let historyStack = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 10;
 
-  // --- View Control State ---
-  let scale = 1.0;
-  const MIN_SCALE = 0.5;
-  const MAX_SCALE = 5.0;
-  let panX = 0;
-  let panY = 0;
-  let isPanning = false;
-  let isSpaceDown = false;
-  let lastPanPos = { x: 0, y: 0 };
+    // --- View Control State ---
+    let scale = 1.0;
+    const MIN_SCALE = 0.5;
+    const MAX_SCALE = 5.0;
+    let panX = 0;
+    let panY = 0;
+    let isPanning = false;
+    let isSpaceDown = false;
+    let lastPanPos = { x: 0, y: 0 };
 
 
-  function getStartAngle() { return parseFloat(startAngleIn.value) || 0; }
-  
-  function getDivAngle() {
-    const val = Array.from(divAngleRadios).find(r => r.checked).value;
-    if (val === 'custom') return parseFloat(customDivAngleIn.value) || 1; 
-    return parseFloat(val);
-  }
+    function getStartAngle() { return parseFloat(startAngleIn.value) || 0; }
 
-  function setDefaultStartAngleFromDivAngle({ redraw = true } = {}) {
-    const divDeg = getDivAngle();
-    const next = -(divDeg / 2);
-    isAutoSettingStartAngle = true;
-    startAngleIn.value = (Math.round(next * 10) / 10).toFixed(1);
-    if (redraw) startAngleIn.dispatchEvent(new Event('input'));
-    isAutoSettingStartAngle = false;
-  }
+    function getDivAngle() {
+      const val = Array.from(divAngleRadios).find(r => r.checked).value;
+      if (val === 'custom') return parseFloat(customDivAngleIn.value) || 1;
+      return parseFloat(val);
+    }
 
-  function initCanvas() {
-    const w = parseInt(widthIn.value) || 800;
-    const h = parseInt(heightIn.value) || 800;
+    function setDefaultStartAngleFromDivAngle({ redraw = true } = {}) {
+      const divDeg = getDivAngle();
+      const next = -(divDeg / 2);
+      isAutoSettingStartAngle = true;
+      startAngleIn.value = (Math.round(next * 10) / 10).toFixed(1);
+      if (redraw) startAngleIn.dispatchEvent(new Event('input'));
+      isAutoSettingStartAngle = false;
+    }
 
-    drawCanvas.width = uiCanvas.width = w;
-    drawCanvas.height = uiCanvas.height = h;
+    function initCanvas() {
+      const w = parseInt(widthIn.value) || 800;
+      const h = parseInt(heightIn.value) || 800;
 
-    ctx.imageSmoothingEnabled = false;
-    uiCtx.imageSmoothingEnabled = false;
+      drawCanvas.width = uiCanvas.width = w;
+      drawCanvas.height = uiCanvas.height = h;
 
-    scale = 1.0;
-    const containerRect = canvasContainer.getBoundingClientRect();
-    panX = (containerRect.width - w) / 2;
-    panY = (containerRect.height - h) / 2;
-    applyTransform();
-    drawCanvas.style.cursor = 'default';
+      ctx.imageSmoothingEnabled = false;
+      uiCtx.imageSmoothingEnabled = false;
 
-    if (transparentCheck.checked) {
+      scale = 1.0;
+      const containerRect = canvasContainer.getBoundingClientRect();
+      panX = (containerRect.width - w) / 2;
+      panY = (containerRect.height - h) / 2;
+      applyTransform();
+      drawCanvas.style.cursor = 'default';
+
+      if (transparentCheck.checked) {
         bgPattern.style.display = 'block';
         bgPattern.classList.add('transparent-pattern');
         drawCanvas.style.backgroundColor = 'transparent';
         ctx.clearRect(0, 0, w, h);
-    } else {
+      } else {
         bgPattern.style.display = 'none';
         bgPattern.classList.remove('transparent-pattern');
         drawCanvas.style.backgroundColor = bgColorIn.value;
         ctx.fillStyle = bgColorIn.value;
         ctx.fillRect(0, 0, w, h);
+      }
+
+      // Reset and save initial state for undo/redo
+      historyStack = [ctx.getImageData(0, 0, w, h)];
+      historyIndex = 0;
+
+      drawGuides();
+      updateSvgStaticScaleIfPossible();
     }
 
-    // Reset and save initial state for undo/redo
-    historyStack = [ctx.getImageData(0, 0, w, h)];
-    historyIndex = 0;
+    function drawGuides() {
+      const w = uiCanvas.width, h = uiCanvas.height;
+      const cx = w / 2, cy = h / 2;
+      // Radius for lines should extend to the anchors, near the edge of ui-canvas
+      const radius = Math.min(cx, cy) - ANCHOR_RADIUS - 5; // Leave some padding
 
-    drawGuides();
-    updateSvgStaticScaleIfPossible();
-  }
+      uiCtx.clearRect(0, 0, w, h);
 
-  function drawGuides() {
-    const w = uiCanvas.width, h = uiCanvas.height;
-    const cx = w / 2, cy = h / 2;
-    // Radius for lines should extend to the anchors, near the edge of ui-canvas
-    const radius = Math.min(cx, cy) - ANCHOR_RADIUS - 5; // Leave some padding
-    
-    uiCtx.clearRect(0, 0, w, h);
-    
-    const startDeg = getStartAngle();
-    const divDeg = getDivAngle();
+      const startDeg = getStartAngle();
+      const divDeg = getDivAngle();
 
-    // Math 0 is right, but requirement 0 is up (subtract 90 degrees)
-    const startRad = (startDeg - 90) * Math.PI / 180;
-    const endRad = startRad + (divDeg * Math.PI / 180);
+      // Math 0 is right, but requirement 0 is up (subtract 90 degrees)
+      const startRad = (startDeg - 90) * Math.PI / 180;
+      const endRad = startRad + (divDeg * Math.PI / 180);
 
-    // Draw gray mask outside the drawing wedge
-    if (divDeg < 360) {
-      const maskRadius = Math.sqrt(cx * cx + cy * cy) + 2;
-      uiCtx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+      // Draw gray mask outside the drawing wedge
+      if (divDeg < 360) {
+        const maskRadius = Math.sqrt(cx * cx + cy * cy) + 2;
+        uiCtx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+        uiCtx.beginPath();
+        uiCtx.moveTo(cx, cy);
+        uiCtx.arc(cx, cy, maskRadius, endRad, startRad + 2 * Math.PI);
+        uiCtx.fill();
+      }
+
+      // Store anchor positions for hit detection
+      startAnchorPos = { x: cx + Math.cos(startRad) * radius, y: cy + Math.sin(startRad) * radius };
+      endAnchorPos = { x: cx + Math.cos(endRad) * radius, y: cy + Math.sin(endRad) * radius };
+
+      // Draw Start Line (blue)
+      uiCtx.strokeStyle = 'blue';
+      uiCtx.lineWidth = 2;
+      uiCtx.setLineDash([5, 5]);
       uiCtx.beginPath();
       uiCtx.moveTo(cx, cy);
-      uiCtx.arc(cx, cy, maskRadius, endRad, startRad + 2 * Math.PI);
+      uiCtx.lineTo(startAnchorPos.x, startAnchorPos.y);
+      uiCtx.stroke();
+
+      // Draw End Line (red)
+      uiCtx.strokeStyle = 'red';
+      uiCtx.beginPath();
+      uiCtx.moveTo(cx, cy);
+      uiCtx.lineTo(endAnchorPos.x, endAnchorPos.y);
+      uiCtx.stroke();
+      uiCtx.setLineDash([]);
+
+      // Draw Start Anchor (blue)
+      uiCtx.fillStyle = 'blue';
+      uiCtx.beginPath();
+      uiCtx.arc(startAnchorPos.x, startAnchorPos.y, ANCHOR_RADIUS, 0, 2 * Math.PI);
+      uiCtx.fill();
+
+      // Draw End Anchor (red)
+      uiCtx.fillStyle = 'red';
+      uiCtx.beginPath();
+      uiCtx.arc(endAnchorPos.x, endAnchorPos.y, ANCHOR_RADIUS, 0, 2 * Math.PI);
       uiCtx.fill();
     }
 
-    // Store anchor positions for hit detection
-    startAnchorPos = { x: cx + Math.cos(startRad) * radius, y: cy + Math.sin(startRad) * radius };
-    endAnchorPos = { x: cx + Math.cos(endRad) * radius, y: cy + Math.sin(endRad) * radius };
+    function isInsideWedge(x, y) {
+      const cx = drawCanvas.width / 2, cy = drawCanvas.height / 2;
+      if (x === cx && y === cy) return true;
 
-    // Draw Start Line (blue)
-    uiCtx.strokeStyle = 'blue';
-    uiCtx.lineWidth = 2;
-    uiCtx.setLineDash([5, 5]);
-    uiCtx.beginPath();
-    uiCtx.moveTo(cx, cy);
-    uiCtx.lineTo(startAnchorPos.x, startAnchorPos.y);
-    uiCtx.stroke();
-    
-    // Draw End Line (red)
-    uiCtx.strokeStyle = 'red';
-    uiCtx.beginPath();
-    uiCtx.moveTo(cx, cy);
-    uiCtx.lineTo(endAnchorPos.x, endAnchorPos.y);
-    uiCtx.stroke();
-    uiCtx.setLineDash([]);
+      const angleRad = Math.atan2(y - cy, x - cx);
+      let angleDeg = (angleRad * 180 / Math.PI) + 90;
+      angleDeg = (angleDeg % 360 + 360) % 360; // Normalize 0-360
 
-    // Draw Start Anchor (blue)
-    uiCtx.fillStyle = 'blue';
-    uiCtx.beginPath();
-    uiCtx.arc(startAnchorPos.x, startAnchorPos.y, ANCHOR_RADIUS, 0, 2 * Math.PI);
-    uiCtx.fill();
+      const startDeg = (getStartAngle() % 360 + 360) % 360;
+      const divDeg = getDivAngle();
+      if (divDeg >= 360) return true;
 
-    // Draw End Anchor (red)
-    uiCtx.fillStyle = 'red';
-    uiCtx.beginPath();
-    uiCtx.arc(endAnchorPos.x, endAnchorPos.y, ANCHOR_RADIUS, 0, 2 * Math.PI);
-    uiCtx.fill();
-  }
+      const endDeg = startDeg + divDeg;
+      if (endDeg <= 360) return angleDeg >= startDeg && angleDeg <= endDeg;
+      return angleDeg >= startDeg || angleDeg <= (endDeg % 360);
+    }
 
-  function isInsideWedge(x, y) {
-    const cx = drawCanvas.width / 2, cy = drawCanvas.height / 2;
-    if (x === cx && y === cy) return true;
-
-    const angleRad = Math.atan2(y - cy, x - cx);
-    let angleDeg = (angleRad * 180 / Math.PI) + 90;
-    angleDeg = (angleDeg % 360 + 360) % 360; // Normalize 0-360
-    
-    const startDeg = (getStartAngle() % 360 + 360) % 360;
-    const divDeg = getDivAngle();
-    if (divDeg >= 360) return true;
-    
-    const endDeg = startDeg + divDeg;
-    if (endDeg <= 360) return angleDeg >= startDeg && angleDeg <= endDeg;
-    return angleDeg >= startDeg || angleDeg <= (endDeg % 360);
-  }
-
-  function hexToRgba(hex) {
+    function hexToRgba(hex) {
       const r = parseInt(hex.slice(1, 3), 16) || 0;
       const g = parseInt(hex.slice(3, 5), 16) || 0;
       const b = parseInt(hex.slice(5, 7), 16) || 0;
       return [r, g, b, 255];
-  }
+    }
 
-  function floodFill(imageData, x, y, fillColorHex, sensitivity) {
+    function floodFill(imageData, x, y, fillColorHex, sensitivity) {
       const w = imageData.width;
       const h = imageData.height;
       const data = imageData.data;
       const stack = [[x, y]];
       const fillRgba = hexToRgba(fillColorHex);
-      
+
       const startPos = (y * w + x) * 4;
       const startR = data[startPos];
       const startG = data[startPos + 1];
@@ -1013,70 +1027,70 @@ SOFTWARE.
 
       // Don't fill if the start color is the same as the fill color
       if (startR === fillRgba[0] && startG === fillRgba[1] && startB === fillRgba[2] && startA === fillRgba[3]) {
-          return;
+        return;
       }
 
       const matchStartColor = (pos) => {
-          const rMatch = Math.abs(data[pos] - startR) <= sensitivity;
-          const gMatch = Math.abs(data[pos + 1] - startG) <= sensitivity;
-          const bMatch = Math.abs(data[pos + 2] - startB) <= sensitivity;
-          const aMatch = data[pos + 3] === startA; // Alpha must be an exact match
-          return rMatch && gMatch && bMatch && aMatch;
+        const rMatch = Math.abs(data[pos] - startR) <= sensitivity;
+        const gMatch = Math.abs(data[pos + 1] - startG) <= sensitivity;
+        const bMatch = Math.abs(data[pos + 2] - startB) <= sensitivity;
+        const aMatch = data[pos + 3] === startA; // Alpha must be an exact match
+        return rMatch && gMatch && bMatch && aMatch;
       };
 
       const setColor = (pos) => {
-          data[pos] = fillRgba[0];
-          data[pos + 1] = fillRgba[1];
-          data[pos + 2] = fillRgba[2];
-          data[pos + 3] = fillRgba[3];
+        data[pos] = fillRgba[0];
+        data[pos + 1] = fillRgba[1];
+        data[pos + 2] = fillRgba[2];
+        data[pos + 3] = fillRgba[3];
       };
 
       while (stack.length) {
-          let [cx, cy] = stack.pop();
-          let pos = (cy * w + cx) * 4;
+        let [cx, cy] = stack.pop();
+        let pos = (cy * w + cx) * 4;
 
-          while (cy >= 0 && matchStartColor(pos)) {
-              cy--;
-              pos -= w * 4;
+        while (cy >= 0 && matchStartColor(pos)) {
+          cy--;
+          pos -= w * 4;
+        }
+        cy++;
+        pos += w * 4;
+
+        let reachLeft = false;
+        let reachRight = false;
+
+        while (cy < h && matchStartColor(pos)) {
+          setColor(pos);
+
+          if (cx > 0) {
+            if (matchStartColor(pos - 4)) {
+              if (!reachLeft) {
+                stack.push([cx - 1, cy]);
+                reachLeft = true;
+              }
+            } else if (reachLeft) {
+              reachLeft = false;
+            }
           }
+
+          if (cx < w - 1) {
+            if (matchStartColor(pos + 4)) {
+              if (!reachRight) {
+                stack.push([cx + 1, cy]);
+                reachRight = true;
+              }
+            } else if (reachRight) {
+              reachRight = false;
+            }
+          }
+
           cy++;
           pos += w * 4;
-
-          let reachLeft = false;
-          let reachRight = false;
-
-          while (cy < h && matchStartColor(pos)) {
-              setColor(pos);
-
-              if (cx > 0) {
-                  if (matchStartColor(pos - 4)) {
-                      if (!reachLeft) {
-                          stack.push([cx - 1, cy]);
-                          reachLeft = true;
-                      }
-                  } else if (reachLeft) {
-                      reachLeft = false;
-                  }
-              }
-
-              if (cx < w - 1) {
-                  if (matchStartColor(pos + 4)) {
-                      if (!reachRight) {
-                          stack.push([cx + 1, cy]);
-                          reachRight = true;
-                      }
-                  } else if (reachRight) {
-                      reachRight = false;
-                  }
-              }
-
-              cy++;
-              pos += w * 4;
-          }
+        }
       }
-  }
+    }
 
-  function drawCurrentShape(targetCtx, startX, startY, endX, endY) {
+    function drawCurrentShape(targetCtx, startX, startY, endX, endY) {
       const tool = document.querySelector('input[name="tool"]:checked').value;
       const mirror = mirrorDrawCheck.checked;
       const divDeg = getDivAngle();
@@ -1096,130 +1110,130 @@ SOFTWARE.
       targetCtx.fillStyle = fillColor;
 
       const drawTheShape = (ctx) => {
-          ctx.save();
-          // Clip to the active wedge (rotates with the context)
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          if (divDeg < 360) {
-              ctx.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, startRad, startRad + divDeg * Math.PI / 180);
-          } else {
-              ctx.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, 0, 2 * Math.PI);
-          }
-          ctx.closePath();
-          ctx.clip();
+        ctx.save();
+        // Clip to the active wedge (rotates with the context)
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        if (divDeg < 360) {
+          ctx.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, startRad, startRad + divDeg * Math.PI / 180);
+        } else {
+          ctx.arc(0, 0, Math.max(drawCanvas.width, drawCanvas.height) * 2, 0, 2 * Math.PI);
+        }
+        ctx.closePath();
+        ctx.clip();
 
-          ctx.beginPath();
-          if (tool === 'rect') {
-              const w = endX - startX;
-              const h = endY - startY;
-              const centerLocalX = ((startX + endX) / 2) - cx;
-              const centerLocalY = ((startY + endY) / 2) - cy;
-              if (shapeRot) {
-                ctx.translate(centerLocalX, centerLocalY);
-                ctx.rotate(shapeRot);
-                ctx.rect(-w / 2, -h / 2, w, h);
-              } else {
-                ctx.rect(startX - cx, startY - cy, w, h);
-              }
-          } else if (tool === 'circle') {
-              const r = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-              ctx.arc(startX - cx, startY - cy, r, 0, 2 * Math.PI);
+        ctx.beginPath();
+        if (tool === 'rect') {
+          const w = endX - startX;
+          const h = endY - startY;
+          const centerLocalX = ((startX + endX) / 2) - cx;
+          const centerLocalY = ((startY + endY) / 2) - cy;
+          if (shapeRot) {
+            ctx.translate(centerLocalX, centerLocalY);
+            ctx.rotate(shapeRot);
+            ctx.rect(-w / 2, -h / 2, w, h);
+          } else {
+            ctx.rect(startX - cx, startY - cy, w, h);
           }
-          if (!isTransparent) ctx.fill();
-          ctx.stroke();
-          ctx.restore();
+        } else if (tool === 'circle') {
+          const r = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+          ctx.arc(startX - cx, startY - cy, r, 0, 2 * Math.PI);
+        }
+        if (!isTransparent) ctx.fill();
+        ctx.stroke();
+        ctx.restore();
       };
 
       for (let i = 0; i < 360; i += divDeg) {
-         const rad = i * Math.PI / 180;
-         targetCtx.save();
-         targetCtx.translate(cx, cy);
-         targetCtx.rotate(rad);
-         drawTheShape(targetCtx);
-         targetCtx.restore();
+        const rad = i * Math.PI / 180;
+        targetCtx.save();
+        targetCtx.translate(cx, cy);
+        targetCtx.rotate(rad);
+        drawTheShape(targetCtx);
+        targetCtx.restore();
 
-         if (mirror) {
-             targetCtx.save();
-             targetCtx.translate(cx, cy);
-             targetCtx.rotate(rad);
-             targetCtx.rotate(startRad);
-             targetCtx.scale(1, -1);
-             targetCtx.rotate(-startRad);
-             drawTheShape(targetCtx);
-             targetCtx.restore();
-         }
+        if (mirror) {
+          targetCtx.save();
+          targetCtx.translate(cx, cy);
+          targetCtx.rotate(rad);
+          targetCtx.rotate(startRad);
+          targetCtx.scale(1, -1);
+          targetCtx.rotate(-startRad);
+          drawTheShape(targetCtx);
+          targetCtx.restore();
+        }
       }
       targetCtx.restore();
-  }
-
-  function draw(e) {
-    if (!isDrawing) return;
-    
-    const tool = document.querySelector('input[name="tool"]:checked').value;
-    if (tool !== 'brush') return;
-    
-    const pos = getMousePos(drawCanvas, e);
-    const x = pos.x;
-    const y = pos.y;
-    
-    if (!isInsideWedge(x, y)) {
-       lastX = x; lastY = y;
-       return;
     }
 
-    const cx = drawCanvas.width / 2, cy = drawCanvas.height / 2;
-    const divDeg = getDivAngle();
-    const mirror = mirrorDrawCheck.checked;
-    const startRad = (getStartAngle() - 90) * Math.PI / 180;
+    function draw(e) {
+      if (!isDrawing) return;
 
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = parseInt(brushSizeIn.value);
-    ctx.strokeStyle = paintColorIn.value;
+      const tool = document.querySelector('input[name="tool"]:checked').value;
+      if (tool !== 'brush') return;
 
-    for (let i = 0; i < 360; i += divDeg) {
-       const rad = i * Math.PI / 180;
-       
-       ctx.save();
-       ctx.translate(cx, cy);
-       ctx.rotate(rad);
-       ctx.beginPath();
-       ctx.moveTo(lastX - cx, lastY - cy);
-       ctx.lineTo(x - cx, y - cy);
-       ctx.stroke();
-       ctx.restore();
-       
-       if (mirror) {
-           ctx.save();
-           ctx.translate(cx, cy);
-           ctx.rotate(rad);
-           ctx.rotate(startRad);
-           ctx.scale(1, -1);
-           ctx.rotate(-startRad);
-           ctx.beginPath();
-           ctx.moveTo(lastX - cx, lastY - cy);
-           ctx.lineTo(x - cx, y - cy);
-           ctx.stroke();
-           ctx.restore();
-       }
+      const pos = getMousePos(drawCanvas, e);
+      const x = pos.x;
+      const y = pos.y;
+
+      if (!isInsideWedge(x, y)) {
+        lastX = x; lastY = y;
+        return;
+      }
+
+      const cx = drawCanvas.width / 2, cy = drawCanvas.height / 2;
+      const divDeg = getDivAngle();
+      const mirror = mirrorDrawCheck.checked;
+      const startRad = (getStartAngle() - 90) * Math.PI / 180;
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = parseInt(brushSizeIn.value);
+      ctx.strokeStyle = paintColorIn.value;
+
+      for (let i = 0; i < 360; i += divDeg) {
+        const rad = i * Math.PI / 180;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rad);
+        ctx.beginPath();
+        ctx.moveTo(lastX - cx, lastY - cy);
+        ctx.lineTo(x - cx, y - cy);
+        ctx.stroke();
+        ctx.restore();
+
+        if (mirror) {
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(rad);
+          ctx.rotate(startRad);
+          ctx.scale(1, -1);
+          ctx.rotate(-startRad);
+          ctx.beginPath();
+          ctx.moveTo(lastX - cx, lastY - cy);
+          ctx.lineTo(x - cx, y - cy);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+      lastX = x; lastY = y;
     }
-    lastX = x; lastY = y;
-  }
 
-  const initDraw = (e) => {
-    const pos = getMousePos(drawCanvas, e);
-    const x = pos.x;
-    const y = pos.y;
-    
-    if (!isInsideWedge(x, y)) {
-       lastX = x;
-       lastY = y;
-       return;
-    }
+    const initDraw = (e) => {
+      const pos = getMousePos(drawCanvas, e);
+      const x = pos.x;
+      const y = pos.y;
 
-    const tool = document.querySelector('input[name="tool"]:checked').value;
+      if (!isInsideWedge(x, y)) {
+        lastX = x;
+        lastY = y;
+        return;
+      }
 
-    if (tool === 'svg') {
+      const tool = document.querySelector('input[name="tool"]:checked').value;
+
+      if (tool === 'svg') {
         if (!selectedSvgShapeId) return;
         isDrawingSvgShape = true;
         svgStartX = x;
@@ -1227,97 +1241,97 @@ SOFTWARE.
         svgCurrentX = x;
         svgCurrentY = y;
         return;
-    }
-    
-    if (tool === 'rect' || tool === 'circle') {
+      }
+
+      if (tool === 'rect' || tool === 'circle') {
         isDrawingShape = true;
         shapeStartX = x;
         shapeStartY = y;
         currentShapeX = x;
         currentShapeY = y;
         return;
-    }
+      }
 
-    if (tool === 'fill') {
+      if (tool === 'fill') {
         const divDeg = getDivAngle();
         const cx = drawCanvas.width / 2;
         const cy = drawCanvas.height / 2;
         const sensitivity = parseInt(fillSensitivityIn.value);
         const imageData = ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
-        
+
         const mirror = mirrorDrawCheck.checked;
         const startRad = (getStartAngle() - 90) * Math.PI / 180;
         const cos2A = Math.cos(2 * startRad);
         const sin2A = Math.sin(2 * startRad);
-        
+
         for (let i = 0; i < 360; i += divDeg) {
-            const rad = i * Math.PI / 180;
-            const dx = x - cx;
-            const dy = y - cy;
-            const rx = Math.round(cx + dx * Math.cos(rad) - dy * Math.sin(rad));
-            const ry = Math.round(cy + dx * Math.sin(rad) + dy * Math.cos(rad));
-            
-            if (rx >= 0 && rx < drawCanvas.width && ry >= 0 && ry < drawCanvas.height) {
-               floodFill(imageData, rx, ry, paintColorIn.value, sensitivity);
+          const rad = i * Math.PI / 180;
+          const dx = x - cx;
+          const dy = y - cy;
+          const rx = Math.round(cx + dx * Math.cos(rad) - dy * Math.sin(rad));
+          const ry = Math.round(cy + dx * Math.sin(rad) + dy * Math.cos(rad));
+
+          if (rx >= 0 && rx < drawCanvas.width && ry >= 0 && ry < drawCanvas.height) {
+            floodFill(imageData, rx, ry, paintColorIn.value, sensitivity);
+          }
+
+          if (mirror) {
+            const mx0 = dx * cos2A + dy * sin2A;
+            const my0 = dx * sin2A - dy * cos2A;
+
+            const mx = Math.round(cx + mx0 * Math.cos(rad) - my0 * Math.sin(rad));
+            const my = Math.round(cy + mx0 * Math.sin(rad) + my0 * Math.cos(rad));
+
+            if (mx >= 0 && mx < drawCanvas.width && my >= 0 && my < drawCanvas.height) {
+              floodFill(imageData, mx, my, paintColorIn.value, sensitivity);
             }
-            
-            if (mirror) {
-                const mx0 = dx * cos2A + dy * sin2A;
-                const my0 = dx * sin2A - dy * cos2A;
-                
-                const mx = Math.round(cx + mx0 * Math.cos(rad) - my0 * Math.sin(rad));
-                const my = Math.round(cy + mx0 * Math.sin(rad) + my0 * Math.cos(rad));
-                
-                if (mx >= 0 && mx < drawCanvas.width && my >= 0 && my < drawCanvas.height) {
-                   floodFill(imageData, mx, my, paintColorIn.value, sensitivity);
-                }
-            }
+          }
         }
         ctx.putImageData(imageData, 0, 0);
         saveState();
         isDrawing = false;
-    } else {
+      } else {
         isDrawing = true;
         lastX = x;
         lastY = y;
         draw(e);
-    }
-  };
+      }
+    };
 
-  // --- Anchor Dragging & Unified Event Handling ---
+    // --- Anchor Dragging & Unified Event Handling ---
 
-  function getMousePos(canvas, evt) {
+    function getMousePos(canvas, evt) {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       return {
-          x: (evt.clientX - rect.left) * scaleX,
-          y: (evt.clientY - rect.top) * scaleY
+        x: (evt.clientX - rect.left) * scaleX,
+        y: (evt.clientY - rect.top) * scaleY
       };
-  }
+    }
 
-  function handleAnchorMouseDown(e) {
+    function handleAnchorMouseDown(e) {
       const pos = getMousePos(drawCanvas, e);
-      
+
       // Hit test for start anchor
       const dxStart = pos.x - startAnchorPos.x;
       const dyStart = pos.y - startAnchorPos.y;
       if (dxStart * dxStart + dyStart * dyStart < ANCHOR_RADIUS * ANCHOR_RADIUS) {
-          isDraggingStart = true;
-          return true;
+        isDraggingStart = true;
+        return true;
       }
 
       // Hit test for end anchor
       const dxEnd = pos.x - endAnchorPos.x;
       const dyEnd = pos.y - endAnchorPos.y;
       if (dxEnd * dxEnd + dyEnd * dyEnd < ANCHOR_RADIUS * ANCHOR_RADIUS) {
-          isDraggingEnd = true;
-          return true;
+        isDraggingEnd = true;
+        return true;
       }
       return false;
-  }
+    }
 
-  function handleAnchorDrag(e) {
+    function handleAnchorDrag(e) {
       const pos = getMousePos(drawCanvas, e);
       const cx = drawCanvas.width / 2;
       const cy = drawCanvas.height / 2;
@@ -1327,62 +1341,62 @@ SOFTWARE.
       angleDeg = (angleDeg % 360 + 360) % 360; // normalize to 0-360
 
       if (isDraggingStart) {
-          startAngleIn.value = angleDeg.toFixed(1);
-          startAngleIn.dispatchEvent(new Event('input'));
+        startAngleIn.value = angleDeg.toFixed(1);
+        startAngleIn.dispatchEvent(new Event('input'));
       } else if (isDraggingEnd) {
-          const startDeg = getStartAngle();
-          let divDeg = angleDeg - startDeg;
-          if (divDeg <= 0.1) { // must be at least 0.1
-              divDeg += 360;
-          }
-          
-          if (divDeg > 180) {
-            divDeg = 180;
-          }
-          
-          const customRadio = document.querySelector('input[name="div-angle"][value="custom"]');
-          if (!customRadio.checked) {
-              customRadio.checked = true;
-              customRadio.dispatchEvent(new Event('change'));
-          }
-          
-          customDivAngleIn.value = divDeg.toFixed(1);
-          customDivAngleIn.dispatchEvent(new Event('input'));
+        const startDeg = getStartAngle();
+        let divDeg = angleDeg - startDeg;
+        if (divDeg <= 0.1) { // must be at least 0.1
+          divDeg += 360;
+        }
+
+        if (divDeg > 180) {
+          divDeg = 180;
+        }
+
+        const customRadio = document.querySelector('input[name="div-angle"][value="custom"]');
+        if (!customRadio.checked) {
+          customRadio.checked = true;
+          customRadio.dispatchEvent(new Event('change'));
+        }
+
+        customDivAngleIn.value = divDeg.toFixed(1);
+        customDivAngleIn.dispatchEvent(new Event('input'));
       }
-  }
+    }
 
-  let initialPinchDist = 0;
-  let initialPinchScale = 1;
+    let initialPinchDist = 0;
+    let initialPinchScale = 1;
 
-  function getPinchDist(e) {
+    function getPinchDist(e) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       return Math.sqrt(dx * dx + dy * dy);
-  }
+    }
 
-  function getPinchCenter(e) {
+    function getPinchCenter(e) {
       return {
-          clientX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          clientY: (e.touches[0].clientY + e.touches[1].clientY) / 2
+        clientX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        clientY: (e.touches[0].clientY + e.touches[1].clientY) / 2
       };
-  }
+    }
 
-  // Mouse & Touch Listeners
-  drawCanvas.addEventListener('mousedown', (e) => {
-    if (isSpaceDown) {
-      isPanning = true;
-      lastPanPos = { x: e.clientX, y: e.clientY };
-      drawCanvas.style.cursor = 'grabbing';
-      return;
-    }
-    if (!handleAnchorMouseDown(e)) {
-      initDraw(e);
-    }
-  });
-  const getTouchObj = (e) => e.touches[0] ? { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY } : null;
-  drawCanvas.addEventListener('touchstart', (e) => { 
-    e.preventDefault(); 
-    if (e.touches.length === 2) {
+    // Mouse & Touch Listeners
+    drawCanvas.addEventListener('mousedown', (e) => {
+      if (isSpaceDown) {
+        isPanning = true;
+        lastPanPos = { x: e.clientX, y: e.clientY };
+        drawCanvas.style.cursor = 'grabbing';
+        return;
+      }
+      if (!handleAnchorMouseDown(e)) {
+        initDraw(e);
+      }
+    });
+    const getTouchObj = (e) => e.touches[0] ? { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY } : null;
+    drawCanvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (e.touches.length === 2) {
         isDrawing = false;
         isDraggingStart = false;
         isDraggingEnd = false;
@@ -1392,108 +1406,108 @@ SOFTWARE.
         const center = getPinchCenter(e);
         lastPanPos = { x: center.clientX, y: center.clientY };
         return;
-    }
-    if (e.touches.length === 1) {
-        const touch = getTouchObj(e); 
-        if(touch && !handleAnchorMouseDown(touch)) initDraw(touch); 
-    }
-  }, { passive: false });
-
-  // Global move/end listeners
-  const handlePan = (e) => {
-    if (!isPanning) return;
-    const dx = e.clientX - lastPanPos.x;
-    const dy = e.clientY - lastPanPos.y;
-    panX += dx;
-    panY += dy;
-    lastPanPos = { x: e.clientX, y: e.clientY };
-    applyTransform();
-  };
-  const handleMove = (e) => {
-    if (isPanning) {
-      handlePan(e);
-    } else if (isDrawingSvgShape) {
-      const pos = getMousePos(drawCanvas, e);
-      svgCurrentX = pos.x;
-      svgCurrentY = pos.y;
-
-      if (!selectedSvgShapeId) {
-        drawGuides();
-        return;
       }
-
-      drawGuides();
-      ensureSvgShapeLoaded(selectedSvgShapeId)
-        .then(entry => {
-          const dx = svgCurrentX - svgStartX;
-          const dy = svgCurrentY - svgStartY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
-          const dragScale = (maxDim > 0 && dist > 0) ? ((2 * dist) / maxDim) : 0;
-          const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
-          const brushPx = getBrushPx();
-          const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
-
-          return getColoredSvgImage(entry, { strokeWidth })
-            .then(colored => colored.ready.then(() => colored))
-            .then(colored => {
-              // Preview at the drag start position.
-              drawSvgShapeAtPointer(uiCtx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
-            });
-        })
-        .catch(() => {
-          // ignore
-        });
-    } else if (isDrawingShape) {
-      const pos = getMousePos(drawCanvas, e);
-      currentShapeX = pos.x;
-      currentShapeY = pos.y;
-      drawGuides(); // clear uiCanvas and redraw line guides
-      drawCurrentShape(uiCtx, shapeStartX, shapeStartY, currentShapeX, currentShapeY); // Render preview
-    } else if (!isDrawing && !isDraggingStart && !isDraggingEnd && getActiveTool() === 'svg') {
-      // Hover preview for SVG shapes.
-      const pos = getMousePos(drawCanvas, e);
-      lastHoverPos = pos;
-      if (!selectedSvgShapeId || !isInsideWedge(pos.x, pos.y)) {
-        drawGuides();
-        return;
+      if (e.touches.length === 1) {
+        const touch = getTouchObj(e);
+        if (touch && !handleAnchorMouseDown(touch)) initDraw(touch);
       }
-      drawGuides();
-      ensureSvgShapeLoaded(selectedSvgShapeId)
-        .then(entry => {
-          updateSvgStaticScaleIfPossible();
-          const scaleFactor = svgStaticScaleFactor || getSvgShapeScaleForPos(pos.x, pos.y, entry.viewBox);
-          const brushPx = getBrushPx();
-          const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
-          return getColoredSvgImage(entry, { strokeWidth })
-            .then(colored => colored.ready.then(() => colored))
-            .then(colored => {
-              // Draw preview on ui canvas.
-              drawSvgShapeAtPointer(uiCtx, entry, pos.x, pos.y, colored.img, { scaleFactorOverride: scaleFactor });
-            });
-        })
-        .catch(() => {
-          // ignore
-        });
-    } else if (isDrawing) {
-      draw(e);
-    } else if (isDraggingStart || isDraggingEnd) {
-      handleAnchorDrag(e);
-    }
-  };
-  const handleTouchMove = (e) => { 
-    e.preventDefault(); 
-    if (e.touches.length === 2) {
+    }, { passive: false });
+
+    // Global move/end listeners
+    const handlePan = (e) => {
+      if (!isPanning) return;
+      const dx = e.clientX - lastPanPos.x;
+      const dy = e.clientY - lastPanPos.y;
+      panX += dx;
+      panY += dy;
+      lastPanPos = { x: e.clientX, y: e.clientY };
+      applyTransform();
+    };
+    const handleMove = (e) => {
+      if (isPanning) {
+        handlePan(e);
+      } else if (isDrawingSvgShape) {
+        const pos = getMousePos(drawCanvas, e);
+        svgCurrentX = pos.x;
+        svgCurrentY = pos.y;
+
+        if (!selectedSvgShapeId) {
+          drawGuides();
+          return;
+        }
+
+        drawGuides();
+        ensureSvgShapeLoaded(selectedSvgShapeId)
+          .then(entry => {
+            const dx = svgCurrentX - svgStartX;
+            const dy = svgCurrentY - svgStartY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
+            const dragScale = (maxDim > 0 && dist > 0) ? ((2 * dist) / maxDim) : 0;
+            const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
+            const brushPx = getBrushPx();
+            const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+
+            return getColoredSvgImage(entry, { strokeWidth })
+              .then(colored => colored.ready.then(() => colored))
+              .then(colored => {
+                // Preview at the drag start position.
+                drawSvgShapeAtPointer(uiCtx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
+              });
+          })
+          .catch(() => {
+            // ignore
+          });
+      } else if (isDrawingShape) {
+        const pos = getMousePos(drawCanvas, e);
+        currentShapeX = pos.x;
+        currentShapeY = pos.y;
+        drawGuides(); // clear uiCanvas and redraw line guides
+        drawCurrentShape(uiCtx, shapeStartX, shapeStartY, currentShapeX, currentShapeY); // Render preview
+      } else if (!isDrawing && !isDraggingStart && !isDraggingEnd && getActiveTool() === 'svg') {
+        // Hover preview for SVG shapes.
+        const pos = getMousePos(drawCanvas, e);
+        lastHoverPos = pos;
+        if (!selectedSvgShapeId || !isInsideWedge(pos.x, pos.y)) {
+          drawGuides();
+          return;
+        }
+        drawGuides();
+        ensureSvgShapeLoaded(selectedSvgShapeId)
+          .then(entry => {
+            updateSvgStaticScaleIfPossible();
+            const scaleFactor = svgStaticScaleFactor || getSvgShapeScaleForPos(pos.x, pos.y, entry.viewBox);
+            const brushPx = getBrushPx();
+            const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+            return getColoredSvgImage(entry, { strokeWidth })
+              .then(colored => colored.ready.then(() => colored))
+              .then(colored => {
+                // Draw preview on ui canvas.
+                drawSvgShapeAtPointer(uiCtx, entry, pos.x, pos.y, colored.img, { scaleFactorOverride: scaleFactor });
+              });
+          })
+          .catch(() => {
+            // ignore
+          });
+      } else if (isDrawing) {
+        draw(e);
+      } else if (isDraggingStart || isDraggingEnd) {
+        handleAnchorDrag(e);
+      }
+    };
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      if (e.touches.length === 2) {
         const dist = getPinchDist(e);
         const center = getPinchCenter(e);
-        
+
         if (initialPinchDist > 0) {
-            const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, initialPinchScale * (dist / initialPinchDist)));
-            const scaleRatio = newScale / scale;
-            scale = newScale;
-            panX = center.clientX - (center.clientX - panX) * scaleRatio;
-            panY = center.clientY - (center.clientY - panY) * scaleRatio;
+          const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, initialPinchScale * (dist / initialPinchDist)));
+          const scaleRatio = newScale / scale;
+          scale = newScale;
+          panX = center.clientX - (center.clientX - panX) * scaleRatio;
+          panY = center.clientY - (center.clientY - panY) * scaleRatio;
         }
 
         const dx = center.clientX - lastPanPos.x;
@@ -1504,235 +1518,235 @@ SOFTWARE.
 
         applyTransform();
         return;
-    }
-    if (e.touches.length === 1) {
-        const touch = getTouchObj(e); 
-        if(touch) handleMove(touch); 
-    }
-  };
-  const handleEnd = (e) => {
-    if (e && e.type === 'touchend' && e.touches && e.touches.length > 0) {
+      }
+      if (e.touches.length === 1) {
+        const touch = getTouchObj(e);
+        if (touch) handleMove(touch);
+      }
+    };
+    const handleEnd = (e) => {
+      if (e && e.type === 'touchend' && e.touches && e.touches.length > 0) {
         if (isPanning) isPanning = false;
         if (isDrawingSvgShape) {
-            const dx = svgCurrentX - svgStartX;
-            const dy = svgCurrentY - svgStartY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const isClick = dist < 3;
+          const dx = svgCurrentX - svgStartX;
+          const dy = svgCurrentY - svgStartY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const isClick = dist < 3;
 
-            ensureSvgShapeLoaded(selectedSvgShapeId)
-              .then(entry => {
-                const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
-                const dragScale = (!isClick && maxDim > 0) ? ((2 * dist) / maxDim) : 0;
-                const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
-                const brushPx = getBrushPx();
-                const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+          ensureSvgShapeLoaded(selectedSvgShapeId)
+            .then(entry => {
+              const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
+              const dragScale = (!isClick && maxDim > 0) ? ((2 * dist) / maxDim) : 0;
+              const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
+              const brushPx = getBrushPx();
+              const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
 
-                return getColoredSvgImage(entry, { strokeWidth })
-                  .then(colored => colored.ready.then(() => colored))
-                  .then(colored => {
-                    drawSvgShapeAtPointer(ctx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
-                    saveState();
-                    drawGuides();
-                  });
-              })
-              .catch(() => {
-                // ignore
-              });
+              return getColoredSvgImage(entry, { strokeWidth })
+                .then(colored => colored.ready.then(() => colored))
+                .then(colored => {
+                  drawSvgShapeAtPointer(ctx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
+                  saveState();
+                  drawGuides();
+                });
+            })
+            .catch(() => {
+              // ignore
+            });
 
-            isDrawingSvgShape = false;
+          isDrawingSvgShape = false;
         }
         if (isDrawingShape) {
-            drawCurrentShape(ctx, shapeStartX, shapeStartY, currentShapeX, currentShapeY);
-            isDrawingShape = false;
-            saveState();
-            drawGuides();
+          drawCurrentShape(ctx, shapeStartX, shapeStartY, currentShapeX, currentShapeY);
+          isDrawingShape = false;
+          saveState();
+          drawGuides();
         }
         if (isDrawing) { saveState(); isDrawing = false; }
         isDraggingStart = false;
         isDraggingEnd = false;
         return;
-    }
-    if (isPanning) {
-      isPanning = false;
-      drawCanvas.style.cursor = isSpaceDown ? 'grab' : 'default';
-    }
+      }
+      if (isPanning) {
+        isPanning = false;
+        drawCanvas.style.cursor = isSpaceDown ? 'grab' : 'default';
+      }
 
-    if (isDrawingSvgShape) {
-      const dx = svgCurrentX - svgStartX;
-      const dy = svgCurrentY - svgStartY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const isClick = dist < 3;
+      if (isDrawingSvgShape) {
+        const dx = svgCurrentX - svgStartX;
+        const dy = svgCurrentY - svgStartY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const isClick = dist < 3;
 
-      ensureSvgShapeLoaded(selectedSvgShapeId)
-        .then(entry => {
-          const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
-          const dragScale = (!isClick && maxDim > 0) ? ((2 * dist) / maxDim) : 0;
-          const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
-          const brushPx = getBrushPx();
-          const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+        ensureSvgShapeLoaded(selectedSvgShapeId)
+          .then(entry => {
+            const maxDim = Math.max(entry.viewBox.width, entry.viewBox.height);
+            const dragScale = (!isClick && maxDim > 0) ? ((2 * dist) / maxDim) : 0;
+            const scaleFactor = dragScale || svgStaticScaleFactor || getSvgShapeScaleForPos(svgStartX, svgStartY, entry.viewBox);
+            const brushPx = getBrushPx();
+            const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
 
-          return getColoredSvgImage(entry, { strokeWidth })
-            .then(colored => colored.ready.then(() => colored))
-            .then(colored => {
-              drawSvgShapeAtPointer(ctx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
-              saveState();
-              drawGuides();
-            });
-        })
-        .catch(() => {
-          // ignore
-        });
+            return getColoredSvgImage(entry, { strokeWidth })
+              .then(colored => colored.ready.then(() => colored))
+              .then(colored => {
+                drawSvgShapeAtPointer(ctx, entry, svgStartX, svgStartY, colored.img, { scaleFactorOverride: scaleFactor });
+                saveState();
+                drawGuides();
+              });
+          })
+          .catch(() => {
+            // ignore
+          });
 
-      isDrawingSvgShape = false;
-    }
-    if (isDrawingShape) {
+        isDrawingSvgShape = false;
+      }
+      if (isDrawingShape) {
         drawCurrentShape(ctx, shapeStartX, shapeStartY, currentShapeX, currentShapeY);
         isDrawingShape = false;
         saveState();
         drawGuides();
-    }
-    if (isDrawing) { // Only save state if we were drawing
+      }
+      if (isDrawing) { // Only save state if we were drawing
         saveState();
-    }
-    isDrawing = false;
-    isDraggingStart = false;
-    isDraggingEnd = false;
-  };
-  window.addEventListener('mousemove', handleMove);
-  window.addEventListener('mouseup', handleEnd);
-  window.addEventListener('touchmove', handleTouchMove, { passive: false });
-  window.addEventListener('touchend', handleEnd);
+      }
+      isDrawing = false;
+      isDraggingStart = false;
+      isDraggingEnd = false;
+    };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
 
-  // --- Undo/Redo Functions ---
-  function saveState() {
-    // Truncate future states if we've undone
-    historyStack = historyStack.slice(0, historyIndex + 1);
+    // --- Undo/Redo Functions ---
+    function saveState() {
+      // Truncate future states if we've undone
+      historyStack = historyStack.slice(0, historyIndex + 1);
 
-    // Add current state
-    historyStack.push(ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
+      // Add current state
+      historyStack.push(ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
 
-    // Enforce max history limit
-    if (historyStack.length > MAX_HISTORY) {
+      // Enforce max history limit
+      if (historyStack.length > MAX_HISTORY) {
         historyStack.shift();
+      }
+
+      // Update index to point to the latest state
+      historyIndex = historyStack.length - 1;
     }
 
-    // Update index to point to the latest state
-    historyIndex = historyStack.length - 1;
-  }
-
-  function undo() {
-    if (historyIndex > 0) {
+    function undo() {
+      if (historyIndex > 0) {
         historyIndex--;
         ctx.putImageData(historyStack[historyIndex], 0, 0);
-    }
-  }
-
-  function redo() {
-    if (historyIndex < historyStack.length - 1) {
-        historyIndex++;
-        ctx.putImageData(historyStack[historyIndex], 0, 0);
-    }
-  }
-
-  function updateToggleText() {
-    const icon = bottomPanel.classList.contains('closed') ? '▶' : '◀';
-    const zoomPct = Math.round(scale * 100);
-    toggleBottom.textContent = `${icon} Tools (${zoomPct}%) ${icon}`;
-  }
-
-  // --- View Controls (Pan & Zoom) ---
-
-  function applyTransform() {
-    const transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-    drawCanvas.style.transform = transform;
-    uiCanvas.style.transform = transform;
-    
-    bgPattern.style.transform = `translate(${panX}px, ${panY}px)`;
-    bgPattern.style.width = `${drawCanvas.width * scale}px`;
-    bgPattern.style.height = `${drawCanvas.height * scale}px`;
-
-    updateToggleText();
-  }
-
-  function zoom(scaleAmount, centerX, centerY) {
-    const oldScale = scale;
-    let newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * scaleAmount));
-    
-    if (Math.abs(newScale - 1.0) < 0.05) {
-        newScale = 1.0;
-    }
-    scale = newScale;
-    const scaleRatio = scale / oldScale;
-
-    panX = centerX - (centerX - panX) * scaleRatio;
-    panY = centerY - (centerY - panY) * scaleRatio;
-
-    applyTransform();
-  }
-
-  window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey) {
-        if (e.code === 'KeyZ') {
-            e.preventDefault();
-            undo();
-        } else if (e.code === 'KeyY') {
-            e.preventDefault();
-            redo();
-        }
-    }
-
-    if (e.code === 'Space' && !isPanning) {
-      e.preventDefault();
-      isSpaceDown = true;
-      drawCanvas.style.cursor = 'grab';
-    }
-  });
-
-  window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') {
-      isSpaceDown = false;
-      if (!isPanning) {
-        drawCanvas.style.cursor = 'default';
       }
     }
-  });
 
-  // Event Listeners for UI
-  squareCheck.addEventListener('change', () => { if(squareCheck.checked) heightIn.value = widthIn.value; });
-  widthIn.addEventListener('input', () => { if(squareCheck.checked) heightIn.value = widthIn.value; });
-  heightIn.addEventListener('input', () => { if(squareCheck.checked) widthIn.value = heightIn.value; });
-  applyBtn.addEventListener('click', initCanvas);
-  
-  transparentCheck.addEventListener('change', () => {
-    bgColorIn.disabled = transparentCheck.checked;
-    if (transparentCheck.checked) {
+    function redo() {
+      if (historyIndex < historyStack.length - 1) {
+        historyIndex++;
+        ctx.putImageData(historyStack[historyIndex], 0, 0);
+      }
+    }
+
+    function updateToggleText() {
+      const icon = bottomPanel.classList.contains('closed') ? '▶' : '◀';
+      const zoomPct = Math.round(scale * 100);
+      toggleBottom.textContent = `${icon} Tools (${zoomPct}%) ${icon}`;
+    }
+
+    // --- View Controls (Pan & Zoom) ---
+
+    function applyTransform() {
+      const transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      drawCanvas.style.transform = transform;
+      uiCanvas.style.transform = transform;
+
+      bgPattern.style.transform = `translate(${panX}px, ${panY}px)`;
+      bgPattern.style.width = `${drawCanvas.width * scale}px`;
+      bgPattern.style.height = `${drawCanvas.height * scale}px`;
+
+      updateToggleText();
+    }
+
+    function zoom(scaleAmount, centerX, centerY) {
+      const oldScale = scale;
+      let newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * scaleAmount));
+
+      if (Math.abs(newScale - 1.0) < 0.05) {
+        newScale = 1.0;
+      }
+      scale = newScale;
+      const scaleRatio = scale / oldScale;
+
+      panX = centerX - (centerX - panX) * scaleRatio;
+      panY = centerY - (centerY - panY) * scaleRatio;
+
+      applyTransform();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey) {
+        if (e.code === 'KeyZ') {
+          e.preventDefault();
+          undo();
+        } else if (e.code === 'KeyY') {
+          e.preventDefault();
+          redo();
+        }
+      }
+
+      if (e.code === 'Space' && !isPanning) {
+        e.preventDefault();
+        isSpaceDown = true;
+        drawCanvas.style.cursor = 'grab';
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        isSpaceDown = false;
+        if (!isPanning) {
+          drawCanvas.style.cursor = 'default';
+        }
+      }
+    });
+
+    // Event Listeners for UI
+    squareCheck.addEventListener('change', () => { if (squareCheck.checked) heightIn.value = widthIn.value; });
+    widthIn.addEventListener('input', () => { if (squareCheck.checked) heightIn.value = widthIn.value; });
+    heightIn.addEventListener('input', () => { if (squareCheck.checked) widthIn.value = heightIn.value; });
+    applyBtn.addEventListener('click', initCanvas);
+
+    transparentCheck.addEventListener('change', () => {
+      bgColorIn.disabled = transparentCheck.checked;
+      if (transparentCheck.checked) {
         bgPattern.style.display = 'block';
         bgPattern.classList.add('transparent-pattern');
         drawCanvas.style.backgroundColor = 'transparent';
-    } else {
+      } else {
         bgPattern.style.display = 'none';
         bgPattern.classList.remove('transparent-pattern');
         drawCanvas.style.backgroundColor = bgColorIn.value;
-    }
-  });
+      }
+    });
 
-  clearBtn.addEventListener('click', () => {
-    if (transparentCheck.checked) {
+    clearBtn.addEventListener('click', () => {
+      if (transparentCheck.checked) {
         ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-    } else {
+      } else {
         ctx.fillStyle = bgColorIn.value;
         ctx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
-    }
-    saveState();
-  });
-  
-  toggleBottom.addEventListener('click', () => {
-    bottomPanel.classList.toggle('closed');
-    updateToggleText();
-  });
-  
-  toolRadios.forEach(radio => {
-    radio.addEventListener('change', (e) => {
+      }
+      saveState();
+    });
+
+    toggleBottom.addEventListener('click', () => {
+      bottomPanel.classList.toggle('closed');
+      updateToggleText();
+    });
+
+    toolRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
         const val = e.target.value;
         const isBrush = val === 'brush';
         const isShape = val === 'rect' || val === 'circle';
@@ -1744,131 +1758,131 @@ SOFTWARE.
         if (!isSvg) shapesDetails.open = false;
 
         redrawShapeWidget();
-    });
-  });
-
-  fillSensitivityIn.addEventListener('input', () => fillSensitivityVal.textContent = fillSensitivityIn.value);
-
-  brushSizeIn.addEventListener('input', () => brushVal.textContent = brushSizeIn.value);
-  
-  brushDecBtn.addEventListener('click', () => {
-    brushSizeIn.value = Math.max(1, parseInt(brushSizeIn.value) - 1);
-    brushVal.textContent = brushSizeIn.value;
-    redrawSvgPreviewIfNeeded();
-    redrawShapeWidget();
-  });
-  
-  brushIncBtn.addEventListener('click', () => {
-    brushSizeIn.value = Math.min(50, parseInt(brushSizeIn.value) + 1);
-    brushVal.textContent = brushSizeIn.value;
-    redrawSvgPreviewIfNeeded();
-    redrawShapeWidget();
-  });
-
-  bgColorIn.addEventListener('input', () => {
-    if (!transparentCheck.checked) {
-        drawCanvas.style.backgroundColor = bgColorIn.value;
-    }
-  });
-
-  const redrawSvgPreviewIfNeeded = () => {
-    if (getActiveTool() !== 'svg') return;
-    if (!lastHoverPos) return;
-    if (!selectedSvgShapeId) {
-      drawGuides();
-      return;
-    }
-    if (!isInsideWedge(lastHoverPos.x, lastHoverPos.y)) {
-      drawGuides();
-      return;
-    }
-    drawGuides();
-    ensureSvgShapeLoaded(selectedSvgShapeId)
-      .then(entry => {
-        updateSvgStaticScaleIfPossible();
-        const scaleFactor = svgStaticScaleFactor || getSvgShapeScaleForPos(lastHoverPos.x, lastHoverPos.y, entry.viewBox);
-        const brushPx = getBrushPx();
-        const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
-        return getColoredSvgImage(entry, { strokeWidth })
-          .then(colored => colored.ready.then(() => colored))
-          .then(colored => {
-            drawSvgShapeAtPointer(uiCtx, entry, lastHoverPos.x, lastHoverPos.y, colored.img, { scaleFactorOverride: scaleFactor });
-          });
-      })
-      .catch(() => {
-        // ignore
       });
-  };
+    });
 
-  // Keep SVG preview in sync with brush size changes.
-  brushSizeIn.addEventListener('input', redrawSvgPreviewIfNeeded);
-  brushSizeIn.addEventListener('input', redrawShapeWidget);
+    fillSensitivityIn.addEventListener('input', () => fillSensitivityVal.textContent = fillSensitivityIn.value);
 
-  shapeFillColor.addEventListener('input', redrawSvgPreviewIfNeeded);
-  shapeFillTransparent.addEventListener('change', redrawSvgPreviewIfNeeded);
-  shapeFillColor.addEventListener('input', redrawShapeWidget);
-  shapeFillTransparent.addEventListener('change', redrawShapeWidget);
+    brushSizeIn.addEventListener('input', () => brushVal.textContent = brushSizeIn.value);
 
-  shapeRotateIn.addEventListener('input', () => {
-    shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
-    shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
-    redrawSvgPreviewIfNeeded();
-    redrawShapeWidget();
-  });
-  
-  startAngleIn.addEventListener('input', () => {
-    if (!isAutoSettingStartAngle) startAngleUserModified = true;
-    drawGuides();
-  });
-  divAngleRadios.forEach(r => r.addEventListener('change', (e) => {
-    customDivAngleIn.disabled = (e.target.value !== 'custom');
-    if (!startAngleUserModified) {
-      setDefaultStartAngleFromDivAngle();
-      return;
-    }
-    drawGuides();
-    updateSvgStaticScaleIfPossible();
-  }));
-  customDivAngleIn.addEventListener('input', () => {
-    if (!startAngleUserModified) {
-      setDefaultStartAngleFromDivAngle();
-      return;
-    }
-    drawGuides();
-    updateSvgStaticScaleIfPossible();
-  });
+    brushDecBtn.addEventListener('click', () => {
+      brushSizeIn.value = Math.max(1, parseInt(brushSizeIn.value) - 1);
+      brushVal.textContent = brushSizeIn.value;
+      redrawSvgPreviewIfNeeded();
+      redrawShapeWidget();
+    });
 
-  const canvasContainer = document.getElementById('canvas-container');
+    brushIncBtn.addEventListener('click', () => {
+      brushSizeIn.value = Math.min(50, parseInt(brushSizeIn.value) + 1);
+      brushVal.textContent = brushSizeIn.value;
+      redrawSvgPreviewIfNeeded();
+      redrawShapeWidget();
+    });
 
-  canvasContainer.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const scaleAmount = e.deltaY < 0 ? 1.1 : 0.9;
-    zoom(scaleAmount, e.clientX, e.clientY);
-  }, { passive: false });
+    bgColorIn.addEventListener('input', () => {
+      if (!transparentCheck.checked) {
+        drawCanvas.style.backgroundColor = bgColorIn.value;
+      }
+    });
 
-  zoomInBtn.addEventListener('click', () => {
-    zoom(1.2, window.innerWidth / 2, window.innerHeight / 2);
-  });
+    const redrawSvgPreviewIfNeeded = () => {
+      if (getActiveTool() !== 'svg') return;
+      if (!lastHoverPos) return;
+      if (!selectedSvgShapeId) {
+        drawGuides();
+        return;
+      }
+      if (!isInsideWedge(lastHoverPos.x, lastHoverPos.y)) {
+        drawGuides();
+        return;
+      }
+      drawGuides();
+      ensureSvgShapeLoaded(selectedSvgShapeId)
+        .then(entry => {
+          updateSvgStaticScaleIfPossible();
+          const scaleFactor = svgStaticScaleFactor || getSvgShapeScaleForPos(lastHoverPos.x, lastHoverPos.y, entry.viewBox);
+          const brushPx = getBrushPx();
+          const strokeWidth = scaleFactor > 0 ? (brushPx / scaleFactor) : brushPx;
+          return getColoredSvgImage(entry, { strokeWidth })
+            .then(colored => colored.ready.then(() => colored))
+            .then(colored => {
+              drawSvgShapeAtPointer(uiCtx, entry, lastHoverPos.x, lastHoverPos.y, colored.img, { scaleFactorOverride: scaleFactor });
+            });
+        })
+        .catch(() => {
+          // ignore
+        });
+    };
 
-  zoomOutBtn.addEventListener('click', () => {
-    zoom(1 / 1.2, window.innerWidth / 2, window.innerHeight / 2);
-  });
+    // Keep SVG preview in sync with brush size changes.
+    brushSizeIn.addEventListener('input', redrawSvgPreviewIfNeeded);
+    brushSizeIn.addEventListener('input', redrawShapeWidget);
 
-  zoomResetBtn.addEventListener('click', () => {
-    scale = 1.0;
-    const containerRect = canvasContainer.getBoundingClientRect();
-    const w = drawCanvas.width;
-    const h = drawCanvas.height;
-    panX = (containerRect.width - w) / 2;
-    panY = (containerRect.height - h) / 2;
-    applyTransform();
-  });
+    shapeFillColor.addEventListener('input', redrawSvgPreviewIfNeeded);
+    shapeFillTransparent.addEventListener('change', redrawSvgPreviewIfNeeded);
+    shapeFillColor.addEventListener('input', redrawShapeWidget);
+    shapeFillTransparent.addEventListener('change', redrawShapeWidget);
 
-  exportBtn.addEventListener('click', () => {
-    let exportUrl;
-    if (transparentCheck.checked) {
+    shapeRotateIn.addEventListener('input', () => {
+      shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
+      shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
+      redrawSvgPreviewIfNeeded();
+      redrawShapeWidget();
+    });
+
+    startAngleIn.addEventListener('input', () => {
+      if (!isAutoSettingStartAngle) startAngleUserModified = true;
+      drawGuides();
+    });
+    divAngleRadios.forEach(r => r.addEventListener('change', (e) => {
+      customDivAngleIn.disabled = (e.target.value !== 'custom');
+      if (!startAngleUserModified) {
+        setDefaultStartAngleFromDivAngle();
+        return;
+      }
+      drawGuides();
+      updateSvgStaticScaleIfPossible();
+    }));
+    customDivAngleIn.addEventListener('input', () => {
+      if (!startAngleUserModified) {
+        setDefaultStartAngleFromDivAngle();
+        return;
+      }
+      drawGuides();
+      updateSvgStaticScaleIfPossible();
+    });
+
+    const canvasContainer = document.getElementById('canvas-container');
+
+    canvasContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const scaleAmount = e.deltaY < 0 ? 1.1 : 0.9;
+      zoom(scaleAmount, e.clientX, e.clientY);
+    }, { passive: false });
+
+    zoomInBtn.addEventListener('click', () => {
+      zoom(1.2, window.innerWidth / 2, window.innerHeight / 2);
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+      zoom(1 / 1.2, window.innerWidth / 2, window.innerHeight / 2);
+    });
+
+    zoomResetBtn.addEventListener('click', () => {
+      scale = 1.0;
+      const containerRect = canvasContainer.getBoundingClientRect();
+      const w = drawCanvas.width;
+      const h = drawCanvas.height;
+      panX = (containerRect.width - w) / 2;
+      panY = (containerRect.height - h) / 2;
+      applyTransform();
+    });
+
+    exportBtn.addEventListener('click', () => {
+      let exportUrl;
+      if (transparentCheck.checked) {
         exportUrl = drawCanvas.toDataURL('image/png');
-    } else {
+      } else {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = drawCanvas.width;
         tempCanvas.height = drawCanvas.height;
@@ -1877,20 +1891,21 @@ SOFTWARE.
         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
         tempCtx.drawImage(drawCanvas, 0, 0);
         exportUrl = tempCanvas.toDataURL('image/png');
-    }
-    const link = document.createElement('a');
-    link.download = 'mandala.png';
-    link.href = exportUrl;
-    link.click();
-  });
+      }
+      const link = document.createElement('a');
+      link.download = 'mandala.png';
+      link.href = exportUrl;
+      link.click();
+    });
 
-  // Initialize default starting angle as half of the currently selected dividing angle.
-  setDefaultStartAngleFromDivAngle({ redraw: false });
-  buildShapeGrid();
-  shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
-  shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
-  redrawShapeWidget();
-  initCanvas();
-</script>
+    // Initialize default starting angle as half of the currently selected dividing angle.
+    setDefaultStartAngleFromDivAngle({ redraw: false });
+    buildShapeGrid();
+    shapeRotateDeg = parseFloat(shapeRotateIn.value) || 0;
+    shapeRotateVal.textContent = (Math.round(shapeRotateDeg * 10) / 10).toString();
+    redrawShapeWidget();
+    initCanvas();
+  </script>
 </body>
+
 </html>
